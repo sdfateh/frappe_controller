@@ -9,7 +9,7 @@ from typing import Any, Mapping, Protocol, Sequence
 _AGENT = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
 _BENCH = re.compile(r"^[a-z][a-z0-9-]{0,63}$")
 _DOMAIN = re.compile(r"^(?=.{1,253}\Z)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$")
-_DATABASE = re.compile(r"^[a-z0-9_]{1,64}$")
+_DATABASE = re.compile(r"^[a-z0-9_-]{1,64}$")
 _CAPABILITY = re.compile(r"^[a-z][a-z0-9_]*(?:\.[a-z][a-z0-9_]*)+$")
 _DIGEST = re.compile(r"^[a-f0-9]{64}$")
 _STATUSES = {"ready", "degraded", "error", "maintenance"}
