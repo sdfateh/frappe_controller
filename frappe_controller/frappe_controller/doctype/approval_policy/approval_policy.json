@@ -1,0 +1,164 @@
+{
+  "doctype": "DocType",
+  "name": "Approval Policy",
+  "module": "Frappe Controller",
+  "custom": 0,
+  "is_submittable": 0,
+  "track_changes": 1,
+  "allow_rename": 0,
+  "autoname": "field:policy_name",
+  "sort_field": "modified",
+  "sort_order": "DESC",
+  "field_order": [
+    "policy_name",
+    "enabled",
+    "environment",
+    "operation_pattern",
+    "minimum_approvals",
+    "require_distinct_approvers",
+    "prohibit_requester_approval",
+    "require_backup",
+    "bulk_threshold",
+    "maximum_targets",
+    "description"
+  ],
+  "fields": [
+    {
+      "fieldname": "policy_name",
+      "label": "Policy Name",
+      "fieldtype": "Data",
+      "reqd": 1,
+      "unique": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "enabled",
+      "label": "Enabled",
+      "fieldtype": "Check",
+      "default": "1"
+    },
+    {
+      "fieldname": "environment",
+      "label": "Environment",
+      "fieldtype": "Select",
+      "options": "any\ndevelopment\nstaging\nproduction",
+      "default": "any",
+      "reqd": 1
+    },
+    {
+      "fieldname": "operation_pattern",
+      "label": "Operation Pattern",
+      "fieldtype": "Data",
+      "reqd": 1
+    },
+    {
+      "fieldname": "minimum_approvals",
+      "label": "Minimum Approvals",
+      "fieldtype": "Int",
+      "default": "1",
+      "reqd": 1
+    },
+    {
+      "fieldname": "require_distinct_approvers",
+      "label": "Require Distinct Approvers",
+      "fieldtype": "Check",
+      "default": "1"
+    },
+    {
+      "fieldname": "prohibit_requester_approval",
+      "label": "Prohibit Requester Approval",
+      "fieldtype": "Check",
+      "default": "1"
+    },
+    {
+      "fieldname": "require_backup",
+      "label": "Require Pre-operation Backup",
+      "fieldtype": "Check",
+      "default": "1"
+    },
+    {
+      "fieldname": "bulk_threshold",
+      "label": "Bulk Threshold",
+      "fieldtype": "Int",
+      "default": "1"
+    },
+    {
+      "fieldname": "maximum_targets",
+      "label": "Maximum Targets",
+      "fieldtype": "Int",
+      "default": "100"
+    },
+    {
+      "fieldname": "description",
+      "label": "Description",
+      "fieldtype": "Small Text"
+    }
+  ],
+  "permissions": [
+    {
+      "role": "Controller Admin",
+      "read": 1,
+      "create": 1,
+      "write": 1,
+      "delete": 0,
+      "submit": 0,
+      "cancel": 0,
+      "amend": 0,
+      "export": 1,
+      "report": 0,
+      "share": 0,
+      "print": 0,
+      "email": 0
+    },
+    {
+      "role": "Operator",
+      "read": 1,
+      "create": 0,
+      "write": 0,
+      "delete": 0,
+      "submit": 0,
+      "cancel": 0,
+      "amend": 0,
+      "export": 0,
+      "report": 0,
+      "share": 0,
+      "print": 0,
+      "email": 0
+    },
+    {
+      "role": "Approver",
+      "read": 1,
+      "create": 0,
+      "write": 0,
+      "delete": 0,
+      "submit": 0,
+      "cancel": 0,
+      "amend": 0,
+      "export": 0,
+      "report": 0,
+      "share": 0,
+      "print": 0,
+      "email": 0
+    },
+    {
+      "role": "Auditor",
+      "read": 1,
+      "create": 0,
+      "write": 0,
+      "delete": 0,
+      "submit": 0,
+      "cancel": 0,
+      "amend": 0,
+      "export": 1,
+      "report": 0,
+      "share": 0,
+      "print": 0,
+      "email": 0
+    }
+  ],
+  "search_fields": "policy_name,operation_pattern",
+  "engine": "InnoDB",
+  "actions": [],
+  "links": [],
+  "states": []
+}

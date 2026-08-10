@@ -1,0 +1,162 @@
+{
+  "doctype": "DocType",
+  "name": "Operation Approval",
+  "module": "Frappe Controller",
+  "custom": 0,
+  "is_submittable": 0,
+  "track_changes": 1,
+  "allow_rename": 0,
+  "autoname": "hash",
+  "sort_field": "creation",
+  "sort_order": "DESC",
+  "field_order": [
+    "operation",
+    "approval_policy",
+    "decision",
+    "approver",
+    "decided_at",
+    "comment",
+    "payload_hash_snapshot",
+    "target_key_snapshot",
+    "preview_result_hash_snapshot",
+    "decision_hash"
+  ],
+  "fields": [
+    {
+      "fieldname": "operation",
+      "label": "Operation",
+      "fieldtype": "Link",
+      "options": "Operation",
+      "reqd": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "approval_policy",
+      "label": "Approval Policy",
+      "fieldtype": "Link",
+      "options": "Approval Policy",
+      "reqd": 1
+    },
+    {
+      "fieldname": "decision",
+      "label": "Decision",
+      "fieldtype": "Select",
+      "options": "approved\nrejected",
+      "reqd": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "approver",
+      "label": "Approver",
+      "fieldtype": "Link",
+      "options": "User",
+      "reqd": 1,
+      "read_only": 1
+    },
+    {
+      "fieldname": "decided_at",
+      "label": "Decided At",
+      "fieldtype": "Datetime",
+      "reqd": 1,
+      "read_only": 1
+    },
+    {
+      "fieldname": "comment",
+      "label": "Comment",
+      "fieldtype": "Small Text"
+    },
+    {
+      "fieldname": "payload_hash_snapshot",
+      "label": "Payload Hash Snapshot",
+      "fieldtype": "Data",
+      "reqd": 1,
+      "read_only": 1
+    },
+    {
+      "fieldname": "target_key_snapshot",
+      "label": "Immutable Target Key Snapshot",
+      "fieldtype": "Data",
+      "reqd": 1,
+      "read_only": 1
+    },
+    {
+      "fieldname": "preview_result_hash_snapshot",
+      "label": "Data Update Preview Result Hash Snapshot",
+      "fieldtype": "Data",
+      "read_only": 1
+    },
+    {
+      "fieldname": "decision_hash",
+      "label": "Decision Hash",
+      "fieldtype": "Data",
+      "reqd": 1
+    }
+  ],
+  "permissions": [
+    {
+      "role": "Controller Admin",
+      "read": 1,
+      "create": 0,
+      "write": 0,
+      "delete": 0,
+      "submit": 0,
+      "cancel": 0,
+      "amend": 0,
+      "export": 1,
+      "report": 0,
+      "share": 0,
+      "print": 0,
+      "email": 0
+    },
+    {
+      "role": "Operator",
+      "read": 1,
+      "create": 0,
+      "write": 0,
+      "delete": 0,
+      "submit": 0,
+      "cancel": 0,
+      "amend": 0,
+      "export": 0,
+      "report": 0,
+      "share": 0,
+      "print": 0,
+      "email": 0
+    },
+    {
+      "role": "Approver",
+      "read": 1,
+      "create": 1,
+      "write": 0,
+      "delete": 0,
+      "submit": 0,
+      "cancel": 0,
+      "amend": 0,
+      "export": 0,
+      "report": 0,
+      "share": 0,
+      "print": 0,
+      "email": 0
+    },
+    {
+      "role": "Auditor",
+      "read": 1,
+      "create": 0,
+      "write": 0,
+      "delete": 0,
+      "submit": 0,
+      "cancel": 0,
+      "amend": 0,
+      "export": 1,
+      "report": 0,
+      "share": 0,
+      "print": 0,
+      "email": 0
+    }
+  ],
+  "search_fields": "operation,approver,decision",
+  "engine": "InnoDB",
+  "actions": [],
+  "links": [],
+  "states": []
+}

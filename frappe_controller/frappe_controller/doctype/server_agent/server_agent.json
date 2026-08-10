@@ -1,0 +1,286 @@
+{
+  "doctype": "DocType",
+  "name": "Server Agent",
+  "module": "Frappe Controller",
+  "custom": 0,
+  "is_submittable": 0,
+  "track_changes": 1,
+  "allow_rename": 0,
+  "autoname": "field:agent_id",
+  "sort_field": "modified",
+  "sort_order": "DESC",
+  "field_order": [
+    "agent_id",
+    "server_name",
+    "environment",
+    "enabled",
+    "status",
+    "protocol_version",
+    "audience",
+    "agent_version",
+    "drain_requested",
+    "drain_requested_by",
+    "drain_requested_at",
+    "upgrade_state",
+    "desired_agent_version",
+    "desired_image_digest",
+    "previous_agent_version",
+    "previous_image_digest",
+    "observed_image_digest",
+    "upgrade_requested_by",
+    "upgrade_requested_at",
+    "upgrade_deployed_at",
+    "upgrade_verified_at",
+    "upgrade_failure_code",
+    "capabilities_json",
+    "reported_status",
+    "last_seen",
+    "inventory_updated_at",
+    "inventory_revision",
+    "inventory_digest",
+    "inventory_snapshot_json",
+    "enrollment_token_hash",
+    "enrollment_expires_at",
+    "enrollment_token_created_at",
+    "enrollment_token_created_by",
+    "enrollment_consumed_at",
+    "enrollment_completed_at",
+    "expected_public_key_sha256"
+  ],
+  "fields": [
+    {
+      "fieldname": "agent_id",
+      "label": "Agent ID",
+      "fieldtype": "Data",
+      "reqd": 1,
+      "unique": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "server_name",
+      "label": "Server Name",
+      "fieldtype": "Data",
+      "reqd": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "environment",
+      "label": "Environment",
+      "fieldtype": "Select",
+      "reqd": 1,
+      "options": "development\nstaging\nproduction"
+    },
+    {
+      "fieldname": "enabled",
+      "label": "Enabled",
+      "fieldtype": "Check",
+      "default": "1",
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "status",
+      "label": "Status",
+      "fieldtype": "Select",
+      "reqd": 1,
+      "default": "Enrolling",
+      "options": "Enrolling\nOffline\nOnline\nDisabled",
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "protocol_version",
+      "label": "Protocol Version",
+      "fieldtype": "Data",
+      "reqd": 1,
+      "default": "1.0"
+    },
+    {
+      "fieldname": "audience",
+      "label": "Audience",
+      "fieldtype": "Data",
+      "reqd": 1,
+      "default": "frappe-controller"
+    },
+    {
+      "fieldname": "agent_version",
+      "label": "Agent Version",
+      "fieldtype": "Data"
+    },
+    {"fieldname": "drain_requested", "label": "Drain Requested", "fieldtype": "Check", "default": "0", "read_only": 1},
+    {"fieldname": "drain_requested_by", "label": "Drain Requested By", "fieldtype": "Link", "options": "User", "read_only": 1},
+    {"fieldname": "drain_requested_at", "label": "Drain Requested At", "fieldtype": "Datetime", "read_only": 1},
+    {"fieldname": "upgrade_state", "label": "Upgrade State", "fieldtype": "Select", "options": "none\nplanned\ndraining\nready_to_deploy\nverifying\nsucceeded\nrollback_required\nrollback_verifying\nrolled_back\ncancelled", "default": "none", "reqd": 1, "read_only": 1},
+    {"fieldname": "desired_agent_version", "label": "Desired Agent Version", "fieldtype": "Data", "read_only": 1},
+    {"fieldname": "desired_image_digest", "label": "Desired Image Digest", "fieldtype": "Data", "read_only": 1},
+    {"fieldname": "previous_agent_version", "label": "Previous Agent Version", "fieldtype": "Data", "read_only": 1},
+    {"fieldname": "previous_image_digest", "label": "Previous Image Digest", "fieldtype": "Data", "read_only": 1},
+    {"fieldname": "observed_image_digest", "label": "Observed Image Digest", "fieldtype": "Data", "read_only": 1},
+    {"fieldname": "upgrade_requested_by", "label": "Upgrade Requested By", "fieldtype": "Link", "options": "User", "read_only": 1},
+    {"fieldname": "upgrade_requested_at", "label": "Upgrade Requested At", "fieldtype": "Datetime", "read_only": 1},
+    {"fieldname": "upgrade_deployed_at", "label": "Upgrade Deployed At", "fieldtype": "Datetime", "read_only": 1},
+    {"fieldname": "upgrade_verified_at", "label": "Upgrade Verified At", "fieldtype": "Datetime", "read_only": 1},
+    {"fieldname": "upgrade_failure_code", "label": "Upgrade Failure Code", "fieldtype": "Data", "read_only": 1},
+    {
+      "fieldname": "capabilities_json",
+      "label": "Capabilities JSON",
+      "fieldtype": "Code",
+      "options": "JSON",
+      "default": "[]"
+    },
+    {
+      "fieldname": "reported_status",
+      "label": "Reported Status",
+      "fieldtype": "Select",
+      "options": "ready\ndegraded\nerror\nmaintenance",
+      "read_only": 1
+    },
+    {
+      "fieldname": "last_seen",
+      "label": "Last Seen",
+      "fieldtype": "Datetime",
+      "read_only": 1
+    },
+    {
+      "fieldname": "inventory_updated_at",
+      "label": "Inventory Updated At",
+      "fieldtype": "Datetime",
+      "read_only": 1
+    },
+    {
+      "fieldname": "inventory_revision",
+      "label": "Inventory Revision",
+      "fieldtype": "Int",
+      "default": "0",
+      "read_only": 1
+    },
+    {
+      "fieldname": "inventory_digest",
+      "label": "Inventory Digest",
+      "fieldtype": "Data",
+      "read_only": 1
+    },
+    {
+      "fieldname": "inventory_snapshot_json",
+      "label": "Inventory Snapshot JSON",
+      "fieldtype": "Code",
+      "options": "JSON",
+      "read_only": 1,
+      "hidden": 1
+    },
+    {
+      "fieldname": "enrollment_token_hash",
+      "label": "Enrollment Token Hash",
+      "fieldtype": "Data",
+      "hidden": 1,
+      "no_copy": 1
+    },
+    {
+      "fieldname": "enrollment_expires_at",
+      "label": "Enrollment Expires At",
+      "fieldtype": "Datetime",
+      "hidden": 1,
+      "no_copy": 1
+    },
+    {
+      "fieldname": "enrollment_token_created_at",
+      "label": "Enrollment Token Created At",
+      "fieldtype": "Datetime",
+      "hidden": 1,
+      "no_copy": 1
+    },
+    {
+      "fieldname": "enrollment_token_created_by",
+      "label": "Enrollment Token Created By",
+      "fieldtype": "Data",
+      "hidden": 1,
+      "no_copy": 1
+    },
+    {
+      "fieldname": "enrollment_consumed_at",
+      "label": "Enrollment Consumed At",
+      "fieldtype": "Datetime",
+      "hidden": 1,
+      "no_copy": 1
+    },
+    {
+      "fieldname": "enrollment_completed_at",
+      "label": "Enrollment Completed At",
+      "fieldtype": "Datetime",
+      "hidden": 1,
+      "no_copy": 1
+    },
+    {
+      "fieldname": "expected_public_key_sha256",
+      "label": "Expected Public Key SHA-256",
+      "fieldtype": "Data",
+      "hidden": 1,
+      "no_copy": 1
+    }
+  ],
+  "permissions": [
+    {
+      "role": "Controller Admin",
+      "read": 1,
+      "create": 1,
+      "write": 1,
+      "delete": 0,
+      "submit": 0,
+      "cancel": 0,
+      "amend": 0,
+      "export": 1,
+      "report": 0,
+      "share": 0,
+      "print": 0,
+      "email": 0
+    },
+    {
+      "role": "Operator",
+      "read": 1,
+      "create": 0,
+      "write": 0,
+      "delete": 0,
+      "submit": 0,
+      "cancel": 0,
+      "amend": 0,
+      "export": 0,
+      "report": 0,
+      "share": 0,
+      "print": 0,
+      "email": 0
+    },
+    {
+      "role": "Approver",
+      "read": 1,
+      "create": 0,
+      "write": 0,
+      "delete": 0,
+      "submit": 0,
+      "cancel": 0,
+      "amend": 0,
+      "export": 0,
+      "report": 0,
+      "share": 0,
+      "print": 0,
+      "email": 0
+    },
+    {
+      "role": "Auditor",
+      "read": 1,
+      "create": 0,
+      "write": 0,
+      "delete": 0,
+      "submit": 0,
+      "cancel": 0,
+      "amend": 0,
+      "export": 1,
+      "report": 0,
+      "share": 0,
+      "print": 0,
+      "email": 0
+    }
+  ],
+  "search_fields": "agent_id,server_name",
+  "engine": "InnoDB",
+  "actions": [],
+  "links": [],
+  "states": []
+}

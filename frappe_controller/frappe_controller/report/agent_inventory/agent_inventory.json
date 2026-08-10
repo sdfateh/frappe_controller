@@ -1,0 +1,29 @@
+{
+  "add_total_row": 0,
+  "columns": [
+    {"fieldname": "domain", "fieldtype": "Data", "label": "Site", "width": 220},
+    {"fieldname": "server_agent", "fieldtype": "Link", "label": "Agent", "options": "Server Agent", "width": 160},
+    {"fieldname": "bench", "fieldtype": "Link", "label": "Bench", "options": "Bench", "width": 150},
+    {"fieldname": "status", "fieldtype": "Data", "label": "Status", "width": 120},
+    {"fieldname": "scheduler_enabled", "fieldtype": "Check", "label": "Scheduler", "width": 100},
+    {"fieldname": "maintenance_mode", "fieldtype": "Check", "label": "Maintenance", "width": 110},
+    {"fieldname": "health_status", "fieldtype": "Data", "label": "Health", "width": 120},
+    {"fieldname": "inventory_updated_at", "fieldtype": "Datetime", "label": "Observed", "width": 170}
+  ],
+  "disabled": 0,
+  "doctype": "Report",
+  "filters": [],
+  "is_standard": "Yes",
+  "module": "Frappe Controller",
+  "name": "Agent Inventory",
+  "prepared_report": 0,
+  "ref_doctype": "Managed Site",
+  "report_name": "Agent Inventory",
+  "report_type": "Report Builder",
+  "roles": [
+    {"role": "Controller Admin"},
+    {"role": "Operator"},
+    {"role": "Approver"},
+    {"role": "Auditor"}
+  ]
+}

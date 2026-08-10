@@ -1,0 +1,47 @@
+{
+  "doctype": "DocType",
+  "name": "Bulk Operation Approval",
+  "module": "Frappe Controller",
+  "custom": 0,
+  "is_submittable": 0,
+  "track_changes": 1,
+  "allow_rename": 0,
+  "autoname": "hash",
+  "sort_field": "creation",
+  "sort_order": "ASC",
+  "field_order": [
+    "bulk_operation",
+    "approval_policy",
+    "decision",
+    "approver",
+    "decided_at",
+    "comment",
+    "snapshot_hash",
+    "payload_hash",
+    "dry_run_hash",
+    "decision_hash"
+  ],
+  "fields": [
+    {"fieldname": "bulk_operation", "label": "Bulk Operation", "fieldtype": "Link", "options": "Bulk Operation", "reqd": 1, "in_list_view": 1},
+    {"fieldname": "approval_policy", "label": "Approval Policy", "fieldtype": "Link", "options": "Approval Policy", "reqd": 1},
+    {"fieldname": "decision", "label": "Decision", "fieldtype": "Select", "options": "approved\nrejected", "reqd": 1, "in_list_view": 1},
+    {"fieldname": "approver", "label": "Approver", "fieldtype": "Link", "options": "User", "reqd": 1, "read_only": 1},
+    {"fieldname": "decided_at", "label": "Decided At", "fieldtype": "Datetime", "reqd": 1, "read_only": 1},
+    {"fieldname": "comment", "label": "Comment", "fieldtype": "Small Text"},
+    {"fieldname": "snapshot_hash", "label": "Target Snapshot Hash", "fieldtype": "Data", "reqd": 1, "read_only": 1},
+    {"fieldname": "payload_hash", "label": "Payload Hash", "fieldtype": "Data", "reqd": 1, "read_only": 1},
+    {"fieldname": "dry_run_hash", "label": "Dry Run Evidence Hash", "fieldtype": "Data", "reqd": 1, "read_only": 1},
+    {"fieldname": "decision_hash", "label": "Decision Hash", "fieldtype": "Data", "reqd": 1, "read_only": 1}
+  ],
+  "permissions": [
+    {"role": "Controller Admin", "read": 1, "create": 0, "write": 0, "delete": 0, "submit": 0, "cancel": 0, "amend": 0, "export": 1, "report": 0, "share": 0, "print": 0, "email": 0},
+    {"role": "Operator", "read": 1, "create": 0, "write": 0, "delete": 0, "submit": 0, "cancel": 0, "amend": 0, "export": 0, "report": 0, "share": 0, "print": 0, "email": 0},
+    {"role": "Approver", "read": 1, "create": 0, "write": 0, "delete": 0, "submit": 0, "cancel": 0, "amend": 0, "export": 0, "report": 0, "share": 0, "print": 0, "email": 0},
+    {"role": "Auditor", "read": 1, "create": 0, "write": 0, "delete": 0, "submit": 0, "cancel": 0, "amend": 0, "export": 1, "report": 0, "share": 0, "print": 0, "email": 0}
+  ],
+  "search_fields": "bulk_operation,approver,decision,approval_policy",
+  "engine": "InnoDB",
+  "actions": [],
+  "links": [],
+  "states": []
+}

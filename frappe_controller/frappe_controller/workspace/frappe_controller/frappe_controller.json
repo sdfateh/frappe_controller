@@ -1,0 +1,43 @@
+{
+  "charts": [],
+  "content": "[{\"id\":\"controller-title\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Frappe Controller</span>\",\"col\":12}},{\"id\":\"fleet-card\",\"type\":\"card\",\"data\":{\"card_name\":\"Fleet Inventory\",\"col\":4}},{\"id\":\"operations-card\",\"type\":\"card\",\"data\":{\"card_name\":\"Operations and Failures\",\"col\":4}},{\"id\":\"bulk-card\",\"type\":\"card\",\"data\":{\"card_name\":\"Bulk Operations\",\"col\":4}}]",
+  "doctype": "Workspace",
+  "for_user": "",
+  "hide_custom": 1,
+  "icon": "server",
+  "is_hidden": 0,
+  "label": "Frappe Controller",
+  "links": [
+    {"hidden": 0, "is_query_report": 0, "label": "Fleet Inventory", "link_count": 3, "onboard": 0, "type": "Card Break"},
+    {"hidden": 0, "label": "Server Agents", "link_to": "Server Agent", "link_type": "DocType", "onboard": 0, "type": "Link"},
+    {"hidden": 0, "label": "Benches", "link_to": "Bench", "link_type": "DocType", "onboard": 0, "type": "Link"},
+    {"hidden": 0, "label": "Managed Sites", "link_to": "Managed Site", "link_type": "DocType", "onboard": 0, "type": "Link"},
+    {"hidden": 0, "is_query_report": 0, "label": "Operations and Failures", "link_count": 3, "onboard": 0, "type": "Card Break"},
+    {"hidden": 0, "label": "Operations", "link_to": "Operation", "link_type": "DocType", "onboard": 0, "type": "Link"},
+    {"hidden": 0, "is_query_report": 1, "label": "Agent Operations", "link_to": "Agent Operations", "link_type": "Report", "onboard": 0, "type": "Link"},
+    {"hidden": 0, "is_query_report": 1, "label": "Operation Failures", "link_to": "Operation Failures", "link_type": "Report", "onboard": 0, "type": "Link"},
+    {"hidden": 0, "is_query_report": 0, "label": "Bulk Operations", "link_count": 4, "onboard": 0, "type": "Card Break"},
+    {"hidden": 0, "label": "Bulk Operations", "link_to": "Bulk Operation", "link_type": "DocType", "onboard": 0, "type": "Link"},
+    {"hidden": 0, "label": "Bulk Targets", "link_to": "Bulk Operation Target", "link_type": "DocType", "onboard": 0, "type": "Link"},
+    {"hidden": 0, "is_query_report": 0, "label": "Bulk Progress", "link_to": "Bulk Progress", "link_type": "Report", "onboard": 0, "type": "Link"},
+    {"hidden": 0, "is_query_report": 1, "label": "Bulk Failures", "link_to": "Bulk Failures", "link_type": "Report", "onboard": 0, "type": "Link"}
+  ],
+  "module": "Frappe Controller",
+  "name": "Frappe Controller",
+  "public": 1,
+  "quick_lists": [],
+  "roles": [
+    {"role": "System Manager"},
+    {"role": "Controller Admin"},
+    {"role": "Operator"},
+    {"role": "Approver"},
+    {"role": "Auditor"}
+  ],
+  "sequence_id": 1.0,
+  "shortcuts": [
+    {"color": "Blue", "doc_view": "List", "label": "Agents", "link_to": "Server Agent", "type": "DocType"},
+    {"color": "Cyan", "doc_view": "List", "label": "Benches", "link_to": "Bench", "type": "DocType"},
+    {"color": "Green", "doc_view": "List", "label": "Sites", "link_to": "Managed Site", "type": "DocType"}
+  ],
+  "title": "Frappe Controller"
+}

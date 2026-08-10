@@ -1,0 +1,32 @@
+{
+  "add_total_row": 0,
+  "columns": [
+    {"fieldname": "bulk_operation_id", "fieldtype": "Data", "label": "Bulk Operation ID", "width": 280},
+    {"fieldname": "operation_type", "fieldtype": "Data", "label": "Operation", "width": 190},
+    {"fieldname": "state", "fieldtype": "Data", "label": "State", "width": 130},
+    {"fieldname": "total_targets", "fieldtype": "Int", "label": "Total", "width": 80},
+    {"fieldname": "planned_count", "fieldtype": "Int", "label": "Planned", "width": 85},
+    {"fieldname": "queued_count", "fieldtype": "Int", "label": "Queued", "width": 80},
+    {"fieldname": "running_count", "fieldtype": "Int", "label": "Running", "width": 85},
+    {"fieldname": "succeeded_count", "fieldtype": "Int", "label": "Succeeded", "width": 95},
+    {"fieldname": "failed_count", "fieldtype": "Int", "label": "Failed", "width": 80},
+    {"fieldname": "needs_intervention_count", "fieldtype": "Int", "label": "Intervention", "width": 100},
+    {"fieldname": "modified", "fieldtype": "Datetime", "label": "Updated", "width": 170}
+  ],
+  "disabled": 0,
+  "doctype": "Report",
+  "filters": [],
+  "is_standard": "Yes",
+  "module": "Frappe Controller",
+  "name": "Bulk Progress",
+  "prepared_report": 0,
+  "ref_doctype": "Bulk Operation",
+  "report_name": "Bulk Progress",
+  "report_type": "Report Builder",
+  "roles": [
+    {"role": "Controller Admin"},
+    {"role": "Operator"},
+    {"role": "Approver"},
+    {"role": "Auditor"}
+  ]
+}

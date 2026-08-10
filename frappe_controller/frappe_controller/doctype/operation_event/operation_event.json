@@ -1,0 +1,156 @@
+{
+  "doctype": "DocType",
+  "name": "Operation Event",
+  "module": "Frappe Controller",
+  "custom": 0,
+  "is_submittable": 0,
+  "track_changes": 1,
+  "allow_rename": 0,
+  "autoname": "hash",
+  "sort_field": "creation",
+  "sort_order": "ASC",
+  "field_order": [
+    "operation",
+    "operation_id",
+    "sequence",
+    "attempt",
+    "step",
+    "kind",
+    "details_json",
+    "body_hash",
+    "agent_created_at",
+    "received_at"
+  ],
+  "fields": [
+    {
+      "fieldname": "operation",
+      "label": "Operation",
+      "fieldtype": "Link",
+      "options": "Operation",
+      "reqd": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "operation_id",
+      "label": "Operation ID",
+      "fieldtype": "Data",
+      "reqd": 1
+    },
+    {
+      "fieldname": "sequence",
+      "label": "Sequence",
+      "fieldtype": "Int",
+      "reqd": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "attempt",
+      "label": "Attempt",
+      "fieldtype": "Int"
+    },
+    {
+      "fieldname": "step",
+      "label": "Step",
+      "fieldtype": "Data"
+    },
+    {
+      "fieldname": "kind",
+      "label": "Kind",
+      "fieldtype": "Data",
+      "reqd": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "details_json",
+      "label": "Details JSON",
+      "fieldtype": "Code",
+      "options": "JSON"
+    },
+    {
+      "fieldname": "body_hash",
+      "label": "Body Hash",
+      "fieldtype": "Data",
+      "reqd": 1
+    },
+    {
+      "fieldname": "agent_created_at",
+      "label": "Agent Created At",
+      "fieldtype": "Datetime",
+      "reqd": 1
+    },
+    {
+      "fieldname": "received_at",
+      "label": "Received At",
+      "fieldtype": "Datetime",
+      "reqd": 1,
+      "read_only": 1
+    }
+  ],
+  "permissions": [
+    {
+      "role": "Controller Admin",
+      "read": 1,
+      "create": 0,
+      "write": 0,
+      "delete": 0,
+      "submit": 0,
+      "cancel": 0,
+      "amend": 0,
+      "export": 1,
+      "report": 0,
+      "share": 0,
+      "print": 0,
+      "email": 0
+    },
+    {
+      "role": "Operator",
+      "read": 1,
+      "create": 0,
+      "write": 0,
+      "delete": 0,
+      "submit": 0,
+      "cancel": 0,
+      "amend": 0,
+      "export": 0,
+      "report": 0,
+      "share": 0,
+      "print": 0,
+      "email": 0
+    },
+    {
+      "role": "Approver",
+      "read": 1,
+      "create": 0,
+      "write": 0,
+      "delete": 0,
+      "submit": 0,
+      "cancel": 0,
+      "amend": 0,
+      "export": 0,
+      "report": 0,
+      "share": 0,
+      "print": 0,
+      "email": 0
+    },
+    {
+      "role": "Auditor",
+      "read": 1,
+      "create": 0,
+      "write": 0,
+      "delete": 0,
+      "submit": 0,
+      "cancel": 0,
+      "amend": 0,
+      "export": 1,
+      "report": 0,
+      "share": 0,
+      "print": 0,
+      "email": 0
+    }
+  ],
+  "search_fields": "operation,operation_id,kind,step",
+  "engine": "InnoDB",
+  "actions": [],
+  "links": [],
+  "states": []
+}

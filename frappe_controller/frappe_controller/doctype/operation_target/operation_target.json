@@ -1,0 +1,208 @@
+{
+  "doctype": "DocType",
+  "name": "Operation Target",
+  "module": "Frappe Controller",
+  "custom": 0,
+  "is_submittable": 0,
+  "track_changes": 1,
+  "allow_rename": 0,
+  "autoname": "hash",
+  "sort_field": "modified",
+  "sort_order": "DESC",
+  "field_order": [
+    "operation",
+    "target_key",
+    "server_agent",
+    "bench",
+    "managed_site",
+    "bulk_parent",
+    "bulk_target",
+    "retry_of",
+    "site_domain_snapshot",
+    "operation_type_snapshot",
+    "payload_hash_snapshot",
+    "inventory_revision_snapshot",
+    "state",
+    "attempt",
+    "result_json",
+    "error_code"
+  ],
+  "fields": [
+    {
+      "fieldname": "operation",
+      "label": "Operation",
+      "fieldtype": "Link",
+      "options": "Operation",
+      "reqd": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "target_key",
+      "label": "Target Key",
+      "fieldtype": "Data",
+      "reqd": 1,
+      "unique": 1
+    },
+    {
+      "fieldname": "server_agent",
+      "label": "Server Agent",
+      "fieldtype": "Link",
+      "options": "Server Agent",
+      "reqd": 1
+    },
+    {
+      "fieldname": "bench",
+      "label": "Bench",
+      "fieldtype": "Link",
+      "options": "Bench",
+      "reqd": 1
+    },
+    {
+      "fieldname": "managed_site",
+      "label": "Managed Site",
+      "fieldtype": "Link",
+      "options": "Managed Site"
+    },
+    {
+      "fieldname": "bulk_parent",
+      "label": "Bulk Parent",
+      "fieldtype": "Link",
+      "options": "Bulk Operation",
+      "read_only": 1
+    },
+    {
+      "fieldname": "bulk_target",
+      "label": "Bulk Target",
+      "fieldtype": "Link",
+      "options": "Bulk Operation Target",
+      "unique": 1,
+      "read_only": 1
+    },
+    {
+      "fieldname": "retry_of",
+      "label": "Retry Of Operation Target",
+      "fieldtype": "Link",
+      "options": "Operation Target",
+      "read_only": 1
+    },
+    {
+      "fieldname": "site_domain_snapshot",
+      "label": "Site Domain Snapshot",
+      "fieldtype": "Data"
+    },
+    {
+      "fieldname": "operation_type_snapshot",
+      "label": "Operation Type Snapshot",
+      "fieldtype": "Data",
+      "reqd": 1
+    },
+    {
+      "fieldname": "payload_hash_snapshot",
+      "label": "Payload Hash Snapshot",
+      "fieldtype": "Data",
+      "reqd": 1
+    },
+    {
+      "fieldname": "inventory_revision_snapshot",
+      "label": "Inventory Revision Digest",
+      "fieldtype": "Data",
+      "read_only": 1
+    },
+    {
+      "fieldname": "state",
+      "label": "State",
+      "fieldtype": "Select",
+      "options": "awaiting_approval\nqueued\nleased\nrunning\nsucceeded\nfailed\ncancelled\ntimed_out\nneeds_intervention\ndead_letter\nrejected",
+      "reqd": 1,
+      "default": "awaiting_approval",
+      "in_list_view": 1,
+      "read_only": 1
+    },
+    {
+      "fieldname": "attempt",
+      "label": "Attempt",
+      "fieldtype": "Int",
+      "default": "0"
+    },
+    {
+      "fieldname": "result_json",
+      "label": "Result JSON",
+      "fieldtype": "Code",
+      "options": "JSON",
+      "read_only": 1
+    },
+    {
+      "fieldname": "error_code",
+      "label": "Error Code",
+      "fieldtype": "Data",
+      "read_only": 1
+    }
+  ],
+  "permissions": [
+    {
+      "role": "Controller Admin",
+      "read": 1,
+      "create": 0,
+      "write": 0,
+      "delete": 0,
+      "submit": 0,
+      "cancel": 0,
+      "amend": 0,
+      "export": 1,
+      "report": 0,
+      "share": 0,
+      "print": 0,
+      "email": 0
+    },
+    {
+      "role": "Operator",
+      "read": 1,
+      "create": 0,
+      "write": 0,
+      "delete": 0,
+      "submit": 0,
+      "cancel": 0,
+      "amend": 0,
+      "export": 1,
+      "report": 0,
+      "share": 0,
+      "print": 0,
+      "email": 0
+    },
+    {
+      "role": "Approver",
+      "read": 1,
+      "create": 0,
+      "write": 0,
+      "delete": 0,
+      "submit": 0,
+      "cancel": 0,
+      "amend": 0,
+      "export": 0,
+      "report": 0,
+      "share": 0,
+      "print": 0,
+      "email": 0
+    },
+    {
+      "role": "Auditor",
+      "read": 1,
+      "create": 0,
+      "write": 0,
+      "delete": 0,
+      "submit": 0,
+      "cancel": 0,
+      "amend": 0,
+      "export": 1,
+      "report": 0,
+      "share": 0,
+      "print": 0,
+      "email": 0
+    }
+  ],
+  "search_fields": "operation,target_key,server_agent,bench,managed_site",
+  "engine": "InnoDB",
+  "actions": [],
+  "links": [],
+  "states": []
+}

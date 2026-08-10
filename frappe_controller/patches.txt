@@ -1,0 +1,6 @@
+# Database/data migrations are appended here and never reordered.
+# Phase 6 adds new DocTypes and nullable links only; Frappe schema sync is
+# sufficient and no data rewrite patch is required.
+# Phase 5 preview lineage, inventory revision, labels, and approval snapshot
+# columns are nullable for existing records and likewise require schema sync
+# only. New approvals populate all required evidence snapshots before insert.

@@ -1,0 +1,180 @@
+{
+  "doctype": "DocType",
+  "name": "Agent Certificate",
+  "module": "Frappe Controller",
+  "custom": 0,
+  "is_submittable": 0,
+  "track_changes": 1,
+  "allow_rename": 0,
+  "autoname": "field:fingerprint_sha256",
+  "sort_field": "modified",
+  "sort_order": "DESC",
+  "field_order": [
+    "server_agent",
+    "serial_number",
+    "fingerprint_sha256",
+    "public_key_sha256",
+    "status",
+    "valid_from",
+    "valid_until",
+    "issued_at",
+    "issued_by",
+    "overlap_until",
+    "revoked_at",
+    "revoked_by",
+    "revocation_reason"
+  ],
+  "fields": [
+    {
+      "fieldname": "server_agent",
+      "label": "Server Agent",
+      "fieldtype": "Link",
+      "options": "Server Agent",
+      "reqd": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "serial_number",
+      "label": "Serial Number",
+      "fieldtype": "Data",
+      "reqd": 1,
+      "unique": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "fingerprint_sha256",
+      "label": "Fingerprint SHA-256",
+      "fieldtype": "Data",
+      "reqd": 1,
+      "unique": 1
+    },
+    {
+      "fieldname": "public_key_sha256",
+      "label": "Public Key SHA-256",
+      "fieldtype": "Data",
+      "reqd": 1
+    },
+    {
+      "fieldname": "status",
+      "label": "Status",
+      "fieldtype": "Select",
+      "reqd": 1,
+      "default": "Pending",
+      "options": "Pending\nActive\nRotating\nRevoked\nExpired",
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "valid_from",
+      "label": "Valid From",
+      "fieldtype": "Datetime",
+      "reqd": 1
+    },
+    {
+      "fieldname": "valid_until",
+      "label": "Valid Until",
+      "fieldtype": "Datetime",
+      "reqd": 1
+    },
+    {
+      "fieldname": "issued_at",
+      "label": "Issued At",
+      "fieldtype": "Datetime",
+      "reqd": 1
+    },
+    {
+      "fieldname": "issued_by",
+      "label": "Issued By",
+      "fieldtype": "Data",
+      "reqd": 1
+    },
+    {
+      "fieldname": "overlap_until",
+      "label": "Rotation Overlap Until",
+      "fieldtype": "Datetime",
+      "read_only": 1
+    },
+    {
+      "fieldname": "revoked_at",
+      "label": "Revoked At",
+      "fieldtype": "Datetime"
+    },
+    {
+      "fieldname": "revoked_by",
+      "label": "Revoked By",
+      "fieldtype": "Link",
+      "options": "User"
+    },
+    {
+      "fieldname": "revocation_reason",
+      "label": "Revocation Reason",
+      "fieldtype": "Small Text"
+    }
+  ],
+  "permissions": [
+    {
+      "role": "Controller Admin",
+      "read": 1,
+      "create": 1,
+      "write": 1,
+      "delete": 0,
+      "submit": 0,
+      "cancel": 0,
+      "amend": 0,
+      "export": 1,
+      "report": 0,
+      "share": 0,
+      "print": 0,
+      "email": 0
+    },
+    {
+      "role": "Operator",
+      "read": 0,
+      "create": 0,
+      "write": 0,
+      "delete": 0,
+      "submit": 0,
+      "cancel": 0,
+      "amend": 0,
+      "export": 0,
+      "report": 0,
+      "share": 0,
+      "print": 0,
+      "email": 0
+    },
+    {
+      "role": "Approver",
+      "read": 0,
+      "create": 0,
+      "write": 0,
+      "delete": 0,
+      "submit": 0,
+      "cancel": 0,
+      "amend": 0,
+      "export": 0,
+      "report": 0,
+      "share": 0,
+      "print": 0,
+      "email": 0
+    },
+    {
+      "role": "Auditor",
+      "read": 1,
+      "create": 0,
+      "write": 0,
+      "delete": 0,
+      "submit": 0,
+      "cancel": 0,
+      "amend": 0,
+      "export": 1,
+      "report": 0,
+      "share": 0,
+      "print": 0,
+      "email": 0
+    }
+  ],
+  "search_fields": "serial_number,fingerprint_sha256,server_agent",
+  "engine": "InnoDB",
+  "actions": [],
+  "links": [],
+  "states": []
+}

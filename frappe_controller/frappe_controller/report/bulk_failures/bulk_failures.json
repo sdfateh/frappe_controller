@@ -1,0 +1,32 @@
+{
+  "add_total_row": 0,
+  "columns": [
+    {"fieldname": "bulk_operation", "fieldtype": "Link", "label": "Bulk Operation", "options": "Bulk Operation", "width": 280},
+    {"fieldname": "ordinal", "fieldtype": "Int", "label": "#", "width": 55},
+    {"fieldname": "attempt", "fieldtype": "Int", "label": "Attempt", "width": 75},
+    {"fieldname": "managed_site", "fieldtype": "Link", "label": "Site", "options": "Managed Site", "width": 190},
+    {"fieldname": "server_agent", "fieldtype": "Link", "label": "Agent", "options": "Server Agent", "width": 145},
+    {"fieldname": "bench", "fieldtype": "Link", "label": "Bench", "options": "Bench", "width": 135},
+    {"fieldname": "state", "fieldtype": "Data", "label": "Failure State", "width": 150},
+    {"fieldname": "error_code", "fieldtype": "Data", "label": "Error Code", "width": 190},
+    {"fieldname": "child_operation", "fieldtype": "Link", "label": "Child Operation", "options": "Operation", "width": 280},
+    {"fieldname": "completed_at", "fieldtype": "Datetime", "label": "Completed", "width": 170}
+  ],
+  "disabled": 0,
+  "doctype": "Report",
+  "filters": [],
+  "is_standard": "Yes",
+  "module": "Frappe Controller",
+  "name": "Bulk Failures",
+  "prepared_report": 0,
+  "ref_doctype": "Bulk Operation Target",
+  "report_name": "Bulk Failures",
+  "report_type": "Query Report",
+  "query": "SELECT bulk_operation, ordinal, attempt, managed_site, server_agent, bench, state, error_code, child_operation, completed_at FROM `tabBulk Operation Target` WHERE state IN ('failed', 'timed_out', 'dead_letter', 'needs_intervention', 'rejected') ORDER BY completed_at DESC, bulk_operation, ordinal, attempt",
+  "roles": [
+    {"role": "Controller Admin"},
+    {"role": "Operator"},
+    {"role": "Approver"},
+    {"role": "Auditor"}
+  ]
+}

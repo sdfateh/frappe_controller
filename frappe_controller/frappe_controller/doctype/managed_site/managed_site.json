@@ -1,0 +1,198 @@
+{
+  "doctype": "DocType",
+  "name": "Managed Site",
+  "module": "Frappe Controller",
+  "custom": 0,
+  "is_submittable": 0,
+  "track_changes": 1,
+  "allow_rename": 0,
+  "autoname": "field:site_id",
+  "sort_field": "modified",
+  "sort_order": "DESC",
+  "field_order": [
+    "site_id",
+    "domain",
+    "server_agent",
+    "bench",
+    "environment",
+    "status",
+    "installed_apps_json",
+    "labels_json",
+    "database_name",
+    "scheduler_enabled",
+    "maintenance_mode",
+    "health_status",
+    "last_backup_at",
+    "last_migration_at",
+    "inventory_updated_at"
+  ],
+  "fields": [
+    {
+      "fieldname": "site_id",
+      "label": "Site ID",
+      "fieldtype": "Data",
+      "reqd": 1,
+      "unique": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "domain",
+      "label": "Domain",
+      "fieldtype": "Data",
+      "reqd": 1,
+      "unique": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "server_agent",
+      "label": "Server Agent",
+      "fieldtype": "Link",
+      "options": "Server Agent",
+      "reqd": 1
+    },
+    {
+      "fieldname": "bench",
+      "label": "Bench",
+      "fieldtype": "Link",
+      "options": "Bench",
+      "reqd": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "environment",
+      "label": "Environment",
+      "fieldtype": "Select",
+      "options": "development\nstaging\nproduction",
+      "reqd": 1
+    },
+    {
+      "fieldname": "status",
+      "label": "Status",
+      "fieldtype": "Select",
+      "options": "unknown\nprovisioning\nactive\nmaintenance\ndisabled\nmissing\nfailed",
+      "default": "unknown"
+    },
+    {
+      "fieldname": "installed_apps_json",
+      "label": "Installed Apps JSON",
+      "fieldtype": "Code",
+      "options": "JSON",
+      "default": "[]"
+    },
+    {
+      "fieldname": "labels_json",
+      "label": "Controller Labels JSON",
+      "fieldtype": "Code",
+      "options": "JSON",
+      "default": "[]",
+      "description": "Administrator-owned selector labels; inventory heartbeats do not modify this field."
+    },
+    {
+      "fieldname": "database_name",
+      "label": "Database Name",
+      "fieldtype": "Data",
+      "read_only": 1,
+      "hidden": 1
+    },
+    {
+      "fieldname": "scheduler_enabled",
+      "label": "Scheduler Enabled",
+      "fieldtype": "Check"
+    },
+    {
+      "fieldname": "maintenance_mode",
+      "label": "Maintenance Mode",
+      "fieldtype": "Check"
+    },
+    {
+      "fieldname": "health_status",
+      "label": "Health Status",
+      "fieldtype": "Select",
+      "options": "unknown\nhealthy\ndegraded\nunreachable",
+      "default": "unknown"
+    },
+    {
+      "fieldname": "last_backup_at",
+      "label": "Last Backup At",
+      "fieldtype": "Datetime"
+    },
+    {
+      "fieldname": "last_migration_at",
+      "label": "Last Migration At",
+      "fieldtype": "Datetime"
+    },
+    {
+      "fieldname": "inventory_updated_at",
+      "label": "Inventory Updated At",
+      "fieldtype": "Datetime",
+      "read_only": 1
+    }
+  ],
+  "permissions": [
+    {
+      "role": "Controller Admin",
+      "read": 1,
+      "create": 1,
+      "write": 1,
+      "delete": 0,
+      "submit": 0,
+      "cancel": 0,
+      "amend": 0,
+      "export": 1,
+      "report": 0,
+      "share": 0,
+      "print": 0,
+      "email": 0
+    },
+    {
+      "role": "Operator",
+      "read": 1,
+      "create": 0,
+      "write": 0,
+      "delete": 0,
+      "submit": 0,
+      "cancel": 0,
+      "amend": 0,
+      "export": 0,
+      "report": 0,
+      "share": 0,
+      "print": 0,
+      "email": 0
+    },
+    {
+      "role": "Approver",
+      "read": 1,
+      "create": 0,
+      "write": 0,
+      "delete": 0,
+      "submit": 0,
+      "cancel": 0,
+      "amend": 0,
+      "export": 0,
+      "report": 0,
+      "share": 0,
+      "print": 0,
+      "email": 0
+    },
+    {
+      "role": "Auditor",
+      "read": 1,
+      "create": 0,
+      "write": 0,
+      "delete": 0,
+      "submit": 0,
+      "cancel": 0,
+      "amend": 0,
+      "export": 1,
+      "report": 0,
+      "share": 0,
+      "print": 0,
+      "email": 0
+    }
+  ],
+  "search_fields": "site_id,domain,bench,server_agent",
+  "engine": "InnoDB",
+  "actions": [],
+  "links": [],
+  "states": []
+}
