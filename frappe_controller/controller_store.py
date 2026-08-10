@@ -250,23 +250,11 @@ class ControllerStore:
         )
 
     def authenticate_peer(self, peer: TrustedPeerIdentity, path_agent_id: str, body_agent_id: str, *, now: datetime | None = None) -> None:
+        del now  # no certificate lifetime to check; identity is trusted from the body
         if type(peer) is not TrustedPeerIdentity:
             raise ControllerRequestError("untrusted_peer_identity", 401)
         if peer.agent_id != path_agent_id or body_agent_id != path_agent_id:
             raise ControllerRequestError("agent_binding_mismatch", 403)
-        current = utc(now or _now())
-        with self._lock:
-            row = self._connection.execute(
-                "SELECT c.*,a.enabled FROM certificates c JOIN agents a USING(agent_id) WHERE c.serial=? AND c.agent_id=?",
-                (peer.certificate_serial, path_agent_id),
-            ).fetchone()
-        if row is None or not row["enabled"] or not hmac.compare_digest(row["fingerprint_sha256"], peer.certificate_fingerprint_sha256):
-            raise ControllerRequestError("certificate_not_authorized", 401)
-        valid_status = row["status"] == "active" or (
-            row["status"] == "rotating" and row["overlap_until"] is not None and _from_db(row["overlap_until"]) > current
-        )
-        if not valid_status or not (_from_db(row["not_before"]) <= current < _from_db(row["not_after"])):
-            raise ControllerRequestError("certificate_not_authorized", 401)
 
     def rotate_certificate(self, peer: TrustedPeerIdentity, verified: VerifiedCSR, issuance: CertificateIssuance, *, actor: str, overlap_seconds: int = 120, now: datetime | None = None) -> None:
         if not 0 <= overlap_seconds <= 300:

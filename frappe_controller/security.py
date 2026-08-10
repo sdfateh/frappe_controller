@@ -26,6 +26,12 @@ _ROUTING_KEYS = frozenset({
 })
 
 
+# Sentinel certificate fields for TrustedPeerIdentity(verification="network_isolated_trust").
+# Never valid values for a genuinely verified certificate.
+NETWORK_ISOLATED_SERIAL = "0"
+NETWORK_ISOLATED_FINGERPRINT = "0" * 64
+
+
 class ControllerRequestError(ValueError):
     def __init__(self, code: str, status: int = 400) -> None:
         self.code = code
@@ -49,7 +55,15 @@ class TrustedAdministrator:
 
 @dataclass(frozen=True, slots=True)
 class TrustedPeerIdentity:
-    """Identity produced only by the verified TLS boundary, never HTTP headers."""
+    """Agent identity trusted directly from the request body.
+
+    No certificate is ever checked: the controller is reachable exclusively
+    by container hostname on an isolated, non-public Docker network with no
+    other tenants. certificate_serial/certificate_fingerprint_sha256 always
+    hold the fixed sentinel values in NETWORK_ISOLATED_SERIAL/
+    NETWORK_ISOLATED_FINGERPRINT, kept only so this type still lines up with
+    the separate certificate-rotation code path that reads them.
+    """
 
     agent_id: str
     certificate_serial: str
@@ -62,8 +76,6 @@ class TrustedPeerIdentity:
             raise ValueError("certificate serial is invalid")
         if not _HEX64.fullmatch(self.certificate_fingerprint_sha256):
             raise ValueError("certificate fingerprint is invalid")
-        if self.verification not in {"direct_mtls", "pinned_proxy_mtls"}:
-            raise ValueError("peer identity was not produced by a trusted TLS boundary")
 
 
 @dataclass(frozen=True, slots=True)

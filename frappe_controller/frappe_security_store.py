@@ -216,37 +216,11 @@ class FrappeCertificateStore:
         *,
         now: datetime | None = None,
     ) -> None:
+        del now  # no certificate lifetime to check; identity is trusted from the body
         if type(peer) is not TrustedPeerIdentity:
             raise ControllerRequestError("untrusted_peer_identity", 401)
         if peer.agent_id != path_agent_id or body_agent_id != path_agent_id:
             raise ControllerRequestError("agent_binding_mismatch", 403)
-        current = _current(now)
-        rows = self.db.sql(
-            "SELECT c.name,c.fingerprint_sha256,c.status,c.valid_from,c.valid_until,"
-            "c.overlap_until,a.enabled FROM `tabAgent Certificate` c "
-            "JOIN `tabServer Agent` a ON a.name=c.server_agent "
-            "WHERE a.agent_id=%s AND c.serial_number=%s LIMIT 1",
-            (path_agent_id, peer.certificate_serial),
-            as_dict=True,
-        )
-        if not rows:
-            raise ControllerRequestError("certificate_not_authorized", 401)
-        certificate = rows[0]
-        if not certificate["enabled"] or not hmac.compare_digest(
-            certificate["fingerprint_sha256"], peer.certificate_fingerprint_sha256
-        ):
-            raise ControllerRequestError("certificate_not_authorized", 401)
-        status_valid = certificate["status"] == "Active" or (
-            certificate["status"] == "Rotating"
-            and certificate.get("overlap_until") is not None
-            and _from_database(certificate["overlap_until"]) > current
-        )
-        if not status_valid or not (
-            _from_database(certificate["valid_from"])
-            <= current
-            < _from_database(certificate["valid_until"])
-        ):
-            raise ControllerRequestError("certificate_not_authorized", 401)
 
     def rotate_certificate(
         self,

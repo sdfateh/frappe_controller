@@ -1,5 +1,5 @@
 [project]
-name = "frappe-controller"
+name = "frappe_controller"
 version = "0.1.0"
 description = "Central Frappe control plane for allowlisted server agents"
 readme = "README.md"
