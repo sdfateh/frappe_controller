@@ -73,6 +73,7 @@ class FrappeCertificateStore:
     def _lock_agent(self, agent_id: str) -> dict[str, Any]:
         rows = self.db.sql(
             "SELECT name,agent_id,enabled,expected_public_key_sha256,"
+            "signing_public_key_ed25519,"
             "enrollment_token_hash,enrollment_expires_at,enrollment_consumed_at,"
             "enrollment_completed_at FROM `tabServer Agent` "
             "WHERE agent_id=%s LIMIT 1 FOR UPDATE",
@@ -96,8 +97,6 @@ class FrappeCertificateStore:
             raise ValueError("enrollment token policy is invalid")
         issued = _current(now)
         agent = self._lock_agent(agent_id)
-        if not agent["expected_public_key_sha256"]:
-            raise ControllerRequestError("unknown_or_disabled_agent", 404)
         raw_token = secrets.token_urlsafe(32)
         self.db.set_value(
             "Server Agent",
@@ -113,6 +112,62 @@ class FrappeCertificateStore:
             update_modified=False,
         )
         return raw_token
+
+    def complete_signing_key_enrollment(
+        self,
+        raw_token: str,
+        agent_id: str,
+        signing_public_key_ed25519: str,
+        *,
+        actor: str,
+        now: datetime | None = None,
+    ) -> None:
+        """Atomically consume a one-time token and pin an Ed25519 public key."""
+        require_agent_id(agent_id)
+        if (
+            not isinstance(signing_public_key_ed25519, str)
+            or len(signing_public_key_ed25519) != 64
+        ):
+            raise ControllerRequestError("agent_signing_key_invalid", 400)
+        try:
+            public_bytes = bytes.fromhex(signing_public_key_ed25519)
+        except ValueError:
+            raise ControllerRequestError("agent_signing_key_invalid", 400) from None
+        current = _current(now)
+        agent = self._lock_agent(agent_id)
+        if not hmac.compare_digest(
+            agent.get("enrollment_token_hash") or "", self._token_hash(raw_token)
+        ):
+            raise ControllerRequestError("invalid_enrollment_token", 403)
+        expires_at = agent.get("enrollment_expires_at")
+        if expires_at is None or _from_database(expires_at) <= current:
+            raise ControllerRequestError("enrollment_token_expired", 403)
+        if agent.get("enrollment_consumed_at") is not None:
+            if (
+                agent.get("enrollment_completed_at") is not None
+                and hmac.compare_digest(
+                    agent.get("signing_public_key_ed25519") or "",
+                    signing_public_key_ed25519,
+                )
+            ):
+                return
+            raise ControllerRequestError("enrollment_token_used", 409)
+        key_digest = hashlib.sha256(public_bytes).hexdigest()
+        self.db.set_value(
+            "Server Agent",
+            agent["name"],
+            {
+                "expected_public_key_sha256": key_digest,
+                "signing_public_key_ed25519": signing_public_key_ed25519,
+                "last_signed_request_at_ns": None,
+                "enrollment_consumed_at": _database_time(current),
+                "enrollment_completed_at": _database_time(current),
+                "enabled": 1,
+                "status": "Offline",
+            },
+            update_modified=False,
+        )
+        self.db.commit()
 
     def claim_enrollment_token(
         self,
@@ -132,8 +187,18 @@ class FrappeCertificateStore:
         if expires_at is None or _from_database(expires_at) <= current:
             raise ControllerRequestError("enrollment_token_expired", 403)
         expected_key = agent.get("expected_public_key_sha256") or ""
-        if not hmac.compare_digest(expected_key, verified.public_key_sha256):
+        if expected_key and not hmac.compare_digest(expected_key, verified.public_key_sha256):
             raise ControllerRequestError("csr_key_mismatch", 403)
+        if not expected_key:
+            # The one-time token authorizes the first key. Pin it atomically so
+            # every retry, completion, rotation, and future token stays bound.
+            self.db.set_value(
+                "Server Agent",
+                agent["name"],
+                "expected_public_key_sha256",
+                verified.public_key_sha256,
+                update_modified=False,
+            )
         self.db.set_value(
             "Server Agent",
             agent["name"],
@@ -165,7 +230,8 @@ class FrappeCertificateStore:
         ):
             raise ControllerRequestError("enrollment_completion_conflict", 409)
         if not hmac.compare_digest(
-            agent.get("expected_public_key_sha256") or "", verified.public_key_sha256
+            agent.get("expected_public_key_sha256") or verified.public_key_sha256,
+            verified.public_key_sha256,
         ):
             raise ControllerRequestError("csr_key_mismatch", 403)
         self._insert_certificate(agent["name"], issuance, actor=actor, now=current)
@@ -216,11 +282,50 @@ class FrappeCertificateStore:
         *,
         now: datetime | None = None,
     ) -> None:
-        del now  # no certificate lifetime to check; identity is trusted from the body
         if type(peer) is not TrustedPeerIdentity:
             raise ControllerRequestError("untrusted_peer_identity", 401)
         if peer.agent_id != path_agent_id or body_agent_id != path_agent_id:
             raise ControllerRequestError("agent_binding_mismatch", 403)
+        if peer.verification == "ed25519_signature":
+            rows = self.db.sql(
+                "SELECT enabled,signing_public_key_ed25519 FROM `tabServer Agent` "
+                "WHERE agent_id=%s LIMIT 1",
+                (path_agent_id,),
+                as_dict=True,
+            )
+            if (
+                not rows or not rows[0]["enabled"]
+                or not rows[0].get("signing_public_key_ed25519")
+            ):
+                raise ControllerRequestError("agent_signature_not_authorized", 401)
+            return
+        current = _current(now)
+        rows = self.db.sql(
+            "SELECT c.name,c.fingerprint_sha256,c.status,c.valid_from,c.valid_until,"
+            "c.overlap_until,a.enabled FROM `tabAgent Certificate` c "
+            "JOIN `tabServer Agent` a ON a.name=c.server_agent "
+            "WHERE a.agent_id=%s AND c.serial_number=%s LIMIT 1",
+            (path_agent_id, peer.certificate_serial),
+            as_dict=True,
+        )
+        if not rows:
+            raise ControllerRequestError("certificate_not_authorized", 401)
+        certificate = rows[0]
+        if not certificate["enabled"] or not hmac.compare_digest(
+            certificate["fingerprint_sha256"], peer.certificate_fingerprint_sha256
+        ):
+            raise ControllerRequestError("certificate_not_authorized", 401)
+        status_valid = certificate["status"] == "Active" or (
+            certificate["status"] == "Rotating"
+            and certificate.get("overlap_until") is not None
+            and _from_database(certificate["overlap_until"]) > current
+        )
+        if not status_valid or not (
+            _from_database(certificate["valid_from"])
+            <= current
+            < _from_database(certificate["valid_until"])
+        ):
+            raise ControllerRequestError("certificate_not_authorized", 401)
 
     def rotate_certificate(
         self,

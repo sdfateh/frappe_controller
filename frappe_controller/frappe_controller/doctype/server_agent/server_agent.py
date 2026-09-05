@@ -1,3 +1,5 @@
+import ipaddress
+import json
 import re
 
 import frappe
@@ -6,6 +8,8 @@ from frappe.model.document import Document
 from frappe_controller.frappe_controller.doctype._invariants import (
     immutable_fields, prevent_delete, require_json, require_sha256,
 )
+from frappe_controller.controller_settings import load_controller_settings
+from frappe_controller.frappe_security_store import FrappeCertificateStore
 
 _AGENT_ID = re.compile(r"^[a-z0-9][a-z0-9._-]{0,127}$")
 _VERSION = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._+-]{0,63}$")
@@ -41,10 +45,33 @@ class ServerAgent(Document):
             frappe.throw("Agent ID has an invalid format", frappe.ValidationError)
         if self.protocol_version != "1.0" or self.audience != "frappe-controller":
             frappe.throw("Unsupported controller protocol identity", frappe.ValidationError)
+        if self.public_ip:
+            try:
+                normalized_ip = str(ipaddress.IPv4Address(self.public_ip))
+            except ipaddress.AddressValueError:
+                frappe.throw("Public IP must be a valid IPv4 address", frappe.ValidationError)
+            if normalized_ip != self.public_ip:
+                frappe.throw("Public IP must use canonical IPv4 notation", frappe.ValidationError)
         require_json(self.capabilities_json or "[]", "capabilities_json", list)
+        suffixes = require_json(
+            self.allowed_site_suffixes_json or "[]", "allowed_site_suffixes_json", list
+        )
+        operations = require_json(
+            self.allowed_operations_json or "[]", "allowed_operations_json", list
+        )
+        if any(not isinstance(value, str) or not value for value in suffixes):
+            frappe.throw("Allowed site suffixes must be non-empty strings", frappe.ValidationError)
+        if any(not isinstance(value, str) or not value for value in operations):
+            frappe.throw("Allowed operations must be non-empty strings", frappe.ValidationError)
         for field in ("enrollment_token_hash", "expected_public_key_sha256"):
             if self.get(field):
                 require_sha256(self.get(field), field)
+        if self.signing_public_key_ed25519:
+            require_sha256(self.signing_public_key_ed25519, "signing_public_key_ed25519")
+        if self.last_signed_request_at_ns and not re.fullmatch(
+            r"[1-9][0-9]{0,19}", self.last_signed_request_at_ns
+        ):
+            frappe.throw("last_signed_request_at_ns is invalid", frappe.ValidationError)
         if not self.enabled:
             self.status = "Disabled"
         for field in (
@@ -114,3 +141,41 @@ class ServerAgent(Document):
 
     def on_trash(self):
         prevent_delete("Server Agent")
+
+
+@frappe.whitelist()
+def generate_install_token(agent_id: str):
+    """Return a short-lived enrollment token once to a Controller Admin."""
+    user = getattr(getattr(frappe, "session", None), "user", None)
+    if not user or user == "Guest" or "Controller Admin" not in frappe.get_roles(user):
+        frappe.throw("Controller Admin role is required", frappe.PermissionError)
+    agent = frappe.get_doc("Server Agent", agent_id)
+    try:
+        suffixes = json.loads(agent.allowed_site_suffixes_json or "[]")
+        operations = json.loads(agent.allowed_operations_json or "[]")
+    except (TypeError, json.JSONDecodeError):
+        suffixes = operations = []
+    if not isinstance(suffixes, list) or not suffixes or not isinstance(operations, list) or not operations:
+        frappe.throw("Complete the Agent installation policy first", frappe.ValidationError)
+    settings = load_controller_settings(frappe)
+    if not settings.public_controller_url or not settings.agent_image_reference:
+        frappe.throw(
+            "Set Public Controller URL and Agent Image Reference in Frappe Controller Settings first",
+            frappe.ValidationError,
+        )
+    token = FrappeCertificateStore.from_environment(
+        frappe_module=frappe
+    ).create_enrollment_token(
+        agent.agent_id,
+        actor=user,
+        ttl_seconds=settings.enrollment_token_ttl_seconds,
+    )
+    return {
+        "agent_id": agent.agent_id,
+        "enrollment_token": token,
+        "expires_in_seconds": settings.enrollment_token_ttl_seconds,
+        "install_command": (
+            "sudo ./setup.sh --controller "
+            f"{settings.public_controller_url} --agent-id {agent.agent_id}"
+        ),
+    }

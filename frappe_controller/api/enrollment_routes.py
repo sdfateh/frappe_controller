@@ -1,4 +1,4 @@
-"""Frappe HTTP adapters for enrollment tokens, issuance, and rotation."""
+"""Frappe HTTP adapters for one-time Agent signing-key enrollment."""
 
 from __future__ import annotations
 
@@ -6,22 +6,26 @@ from collections.abc import Mapping
 from typing import Any
 
 import frappe
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 from werkzeug.wrappers import Response
 
 from ..frappe_security_store import FrappeCertificateStore
 from ..feature_flags import agent_environment, runtime_feature_config
-from ..proxy_security import trusted_peer_and_route_from_frappe_request
+from ..controller_settings import load_controller_settings
 from ..security import (
     ControllerRequestError,
     TrustedAdministrator,
     canonical_json,
     parse_exact_json,
 )
-from .enrollment import FrappeEnrollmentRuntime, enroll_agent, rotate_certificate
 
 _TOKEN_FIELDS = frozenset({"agent_id", "ttl_seconds"})
 _ENROLLMENT_LIMIT = 96 * 1024
-_ENROLL_FIELDS = frozenset({"protocol_version", "agent_id", "enrollment_token", "csr_pem"})
+_ENROLL_FIELDS = frozenset({
+    "protocol_version", "agent_id", "enrollment_token", "signing_public_key_pem",
+})
+_BOOTSTRAP_CONTRACT_VERSION = "1.0"
 
 
 def _json_response(payload: Mapping[str, Any], *, status: int = 200) -> Response:
@@ -75,6 +79,73 @@ def _error_response(error: Exception) -> Response:
     return _json_response({"accepted": False, "error": "internal_error"}, status=500)
 
 
+def _json_list(value: Any, field: str) -> list[str]:
+    import json
+
+    try:
+        parsed = json.loads(value or "[]")
+    except (TypeError, json.JSONDecodeError):
+        raise ControllerRequestError("bootstrap_policy_invalid", 409) from None
+    if not isinstance(parsed, list) or any(
+        not isinstance(item, str) or not item or item != item.strip()
+        for item in parsed
+    ):
+        raise ControllerRequestError("bootstrap_policy_invalid", 409)
+    return list(dict.fromkeys(parsed))
+
+
+def _bootstrap_profile(agent_id: str) -> dict[str, Any]:
+    settings = load_controller_settings(frappe)
+    agent = frappe.db.get_value(
+        "Server Agent",
+        agent_id,
+        ["agent_id", "audience", "protocol_version", "allowed_site_suffixes_json", "allowed_operations_json"],
+        as_dict=True,
+    )
+    if not agent:
+        raise ControllerRequestError("unknown_or_disabled_agent", 403)
+    suffixes = _json_list(agent.allowed_site_suffixes_json, "allowed_site_suffixes_json")
+    operations = _json_list(agent.allowed_operations_json, "allowed_operations_json")
+    if not settings.public_controller_url or not settings.agent_image_reference or not suffixes or not operations:
+        raise ControllerRequestError("bootstrap_policy_incomplete", 409)
+    return {
+        "contract_version": _BOOTSTRAP_CONTRACT_VERSION,
+        "agent": {
+            "agent_id": agent.agent_id,
+            "audience": agent.audience,
+            "protocol_version": agent.protocol_version,
+        },
+        "controller": {
+            "url": settings.public_controller_url,
+            "site_name": getattr(getattr(frappe, "local", None), "site", "") or "",
+        },
+        "policy": {
+            "allowed_site_suffixes": suffixes,
+            "allowed_operations": operations,
+        },
+        "image": {
+            "reference": settings.agent_image_reference,
+        },
+    }
+
+
+def _signing_public_key(value: Any) -> str:
+    if not isinstance(value, str) or not 64 <= len(value.encode("utf-8")) <= 4096:
+        raise ControllerRequestError("agent_signing_key_invalid", 400)
+    if "PRIVATE KEY" in value:
+        raise ControllerRequestError("private_key_rejected", 400)
+    try:
+        key = serialization.load_pem_public_key(value.encode("ascii"))
+    except (ValueError, UnicodeEncodeError):
+        raise ControllerRequestError("agent_signing_key_invalid", 400) from None
+    if not isinstance(key, Ed25519PublicKey):
+        raise ControllerRequestError("agent_signing_key_invalid", 400)
+    return key.public_bytes(
+        serialization.Encoding.Raw,
+        serialization.PublicFormat.Raw,
+    ).hex()
+
+
 @frappe.whitelist(methods=["POST"])
 def create_enrollment_token_route(**_request_arguments: Any) -> Response:
     """Create a one-time token; its plaintext is returned exactly once."""
@@ -95,50 +166,28 @@ def create_enrollment_token_route(**_request_arguments: Any) -> Response:
         return _error_response(error)
 
 
-@frappe.whitelist(methods=["POST"])
-def enroll_agent_route(**_request_arguments: Any) -> Response:
-    """Issue for an administrator-reviewed CSR using a one-time bound token."""
+@frappe.whitelist(allow_guest=True, methods=["POST"])
+def bootstrap_agent_route(**_request_arguments: Any) -> Response:
+    """Consume a one-time token, pin a signing key, and return install policy."""
     try:
-        administrator = _administrator()
         raw = _request_body()
         body = parse_exact_json(raw, _ENROLL_FIELDS, limit=_ENROLLMENT_LIMIT)
-        if not isinstance(body["agent_id"], str):
+        if (
+            body.get("protocol_version") != "1.0"
+            or not isinstance(body.get("agent_id"), str)
+            or not isinstance(body.get("enrollment_token"), str)
+        ):
             raise ControllerRequestError("invalid_enrollment_request")
-        _require_inventory(body["agent_id"])
-        runtime = FrappeEnrollmentRuntime.from_environment(frappe_module=frappe)
-        response = enroll_agent(
-            runtime.store,
-            raw,
-            administrator=administrator,
-            verify_csr=runtime.verify_csr,
-            issue_certificate=runtime.issue_certificate,
+        bootstrap = _bootstrap_profile(body["agent_id"])
+        public_key = _signing_public_key(body.get("signing_public_key_pem"))
+        FrappeCertificateStore.from_environment(
+            frappe_module=frappe
+        ).complete_signing_key_enrollment(
+            body["enrollment_token"],
+            body["agent_id"],
+            public_key,
+            actor=f"enrollment-token:{body['agent_id']}",
         )
-        return _json_response(response)
-    except Exception as error:
-        return _error_response(error)
-
-
-@frappe.whitelist(allow_guest=True, methods=["POST"])
-def rotate_certificate_route(**_request_arguments: Any) -> Response:
-    """Rotate only for the certificate-bound fixed agent route."""
-    try:
-        peer, path_agent_id = trusted_peer_and_route_from_frappe_request(
-            frappe.request, "certificates:rotate"
-        )
-        raw = _request_body()
-        overlap = frappe.conf.get("frappe_controller_certificate_overlap_seconds", 120)
-        if type(overlap) is not int or not 0 <= overlap <= 300:
-            raise RuntimeError("invalid certificate overlap configuration")
-        runtime = FrappeEnrollmentRuntime.from_environment(frappe_module=frappe)
-        response = rotate_certificate(
-            runtime.store,
-            path_agent_id,
-            raw,
-            peer,
-            verify_csr=runtime.verify_csr,
-            issue_certificate=runtime.issue_certificate,
-            overlap_seconds=overlap,
-        )
-        return _json_response(response)
+        return _json_response({"accepted": True, "bootstrap": bootstrap})
     except Exception as error:
         return _error_response(error)

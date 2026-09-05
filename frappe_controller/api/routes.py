@@ -1,10 +1,8 @@
-"""Real Frappe adapters for the four fixed controller-agent routes.
+"""Real Frappe adapters for the fixed signed Controller-Agent routes.
 
-The public reverse proxy maps the frozen ``/v1/agents/...`` paths to these
-whitelisted POST methods.  Each method ignores Frappe form arguments, derives
-the path and peer identity only from the authenticated proxy context, and
-returns a Werkzeug response so Frappe does not wrap the protocol body in a
-``message`` property.
+Each whitelisted POST method ignores Frappe form arguments, verifies the Agent
+signature against the fixed action, and returns a Werkzeug response so Frappe
+does not wrap the protocol body in a ``message`` property.
 """
 
 from __future__ import annotations
@@ -38,7 +36,7 @@ from ..inventory import (
     InventoryReconciliationService,
     InventorySchemaError,
 )
-from ..proxy_security import trusted_peer_and_route_from_frappe_request
+from ..agent_request_auth import trusted_peer_and_route_from_frappe_request
 from ..security import (
     MAX_REQUEST_BYTES,
     ControllerRequestError,

@@ -38,6 +38,9 @@
     "last_event_sequence",
     "result_json",
     "result_hash",
+    "administrator_credential",
+    "credential_received_at",
+    "credential_consumed_at",
     "error_code",
     "started_at",
     "completed_at"
@@ -235,6 +238,25 @@
       "fieldname": "result_hash",
       "label": "Result Hash",
       "fieldtype": "Data",
+      "read_only": 1
+    },
+    {
+      "fieldname": "administrator_credential",
+      "label": "Generated Administrator Credential",
+      "fieldtype": "Password",
+      "read_only": 1,
+      "hidden": 1
+    },
+    {
+      "fieldname": "credential_received_at",
+      "label": "Credential Received At",
+      "fieldtype": "Datetime",
+      "read_only": 1
+    },
+    {
+      "fieldname": "credential_consumed_at",
+      "label": "Credential Consumed At",
+      "fieldtype": "Datetime",
       "read_only": 1
     },
     {

@@ -8,10 +8,11 @@
   "is_hidden": 0,
   "label": "Frappe Controller",
   "links": [
-    {"hidden": 0, "is_query_report": 0, "label": "Fleet Inventory", "link_count": 3, "onboard": 0, "type": "Card Break"},
+    {"hidden": 0, "is_query_report": 0, "label": "Fleet Inventory", "link_count": 4, "onboard": 0, "type": "Card Break"},
     {"hidden": 0, "label": "Server Agents", "link_to": "Server Agent", "link_type": "DocType", "onboard": 0, "type": "Link"},
     {"hidden": 0, "label": "Benches", "link_to": "Bench", "link_type": "DocType", "onboard": 0, "type": "Link"},
     {"hidden": 0, "label": "Managed Sites", "link_to": "Managed Site", "link_type": "DocType", "onboard": 0, "type": "Link"},
+    {"hidden": 0, "label": "Controller Settings", "link_to": "Frappe Controller Settings", "link_type": "DocType", "onboard": 0, "type": "Link"},
     {"hidden": 0, "is_query_report": 0, "label": "Operations and Failures", "link_count": 3, "onboard": 0, "type": "Card Break"},
     {"hidden": 0, "label": "Operations", "link_to": "Operation", "link_type": "DocType", "onboard": 0, "type": "Link"},
     {"hidden": 0, "is_query_report": 1, "label": "Agent Operations", "link_to": "Agent Operations", "link_type": "Report", "onboard": 0, "type": "Link"},
@@ -37,7 +38,8 @@
   "shortcuts": [
     {"color": "Blue", "doc_view": "List", "label": "Agents", "link_to": "Server Agent", "type": "DocType"},
     {"color": "Cyan", "doc_view": "List", "label": "Benches", "link_to": "Bench", "type": "DocType"},
-    {"color": "Green", "doc_view": "List", "label": "Sites", "link_to": "Managed Site", "type": "DocType"}
+    {"color": "Green", "doc_view": "List", "label": "Sites", "link_to": "Managed Site", "type": "DocType"},
+    {"color": "Orange", "doc_view": "Form", "label": "Settings", "link_to": "Frappe Controller Settings", "type": "DocType"}
   ],
   "title": "Frappe Controller"
 }

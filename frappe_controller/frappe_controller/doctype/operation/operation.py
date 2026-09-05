@@ -23,6 +23,9 @@ _IDENTITY_FIELDS = (
     "bulk_parent", "bulk_target", "retry_of",
     "preview_of", "preview_result_hash",
 )
+_CREDENTIAL_FIELDS = (
+    "administrator_credential", "credential_received_at", "credential_consumed_at",
+)
 
 
 class Operation(Document):
@@ -169,6 +172,13 @@ class Operation(Document):
         if self.approval_status == "not_required" and self.required_approvals:
             frappe.throw("Required approvals cannot be bypassed", frappe.PermissionError)
         immutable_fields(self, _IDENTITY_FIELDS)
+        previous = self.get_doc_before_save()
+        if previous and any(previous.get(field) != self.get(field) for field in _CREDENTIAL_FIELDS):
+            if not self.flags.get("controller_service"):
+                frappe.throw("Operation credential fields are service-owned", frappe.PermissionError)
+        elif not previous and any(self.get(field) for field in _CREDENTIAL_FIELDS):
+            if not self.flags.get("controller_service"):
+                frappe.throw("Operation credential fields are service-owned", frappe.PermissionError)
         legal_transition(self, _TRANSITIONS)
 
     def on_trash(self):

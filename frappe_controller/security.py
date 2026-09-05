@@ -41,7 +41,7 @@ class ControllerRequestError(ValueError):
 
 @dataclass(frozen=True, slots=True)
 class TrustedAdministrator:
-    """Identity produced by an authenticated controller-side admin adapter."""
+    """Audit identity produced by an authenticated enrollment adapter."""
 
     actor_id: str
     authentication: str
@@ -49,20 +49,16 @@ class TrustedAdministrator:
     def __post_init__(self) -> None:
         if not isinstance(self.actor_id, str) or not self.actor_id:
             raise ValueError("administrator actor is invalid")
-        if self.authentication not in {"frappe_session", "service_token"}:
+        if self.authentication not in {"frappe_session", "service_token", "one_time_token"}:
             raise ValueError("administrator authentication context is untrusted")
 
 
 @dataclass(frozen=True, slots=True)
 class TrustedPeerIdentity:
-    """Agent identity trusted directly from the request body.
+    """Agent identity established by a verified request signature.
 
-    No certificate is ever checked: the controller is reachable exclusively
-    by container hostname on an isolated, non-public Docker network with no
-    other tenants. certificate_serial/certificate_fingerprint_sha256 always
-    hold the fixed sentinel values in NETWORK_ISOLATED_SERIAL/
-    NETWORK_ISOLATED_FINGERPRINT, kept only so this type still lines up with
-    the separate certificate-rotation code path that reads them.
+    Signed requests use fixed sentinel values in the legacy certificate
+    fields. The private signing key remains only on the managed server.
     """
 
     agent_id: str

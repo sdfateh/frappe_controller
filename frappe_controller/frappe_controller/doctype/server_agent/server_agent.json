@@ -12,12 +12,16 @@
   "field_order": [
     "agent_id",
     "server_name",
+    "public_ip",
     "environment",
     "enabled",
     "status",
     "protocol_version",
     "audience",
     "agent_version",
+    "installation_section",
+    "allowed_site_suffixes_json",
+    "allowed_operations_json",
     "drain_requested",
     "drain_requested_by",
     "drain_requested_at",
@@ -45,7 +49,9 @@
     "enrollment_token_created_by",
     "enrollment_consumed_at",
     "enrollment_completed_at",
-    "expected_public_key_sha256"
+    "expected_public_key_sha256",
+    "signing_public_key_ed25519",
+    "last_signed_request_at_ns"
   ],
   "fields": [
     {
@@ -62,6 +68,12 @@
       "fieldtype": "Data",
       "reqd": 1,
       "in_list_view": 1
+    },
+    {
+      "fieldname": "public_ip",
+      "label": "Public IPv4 Address",
+      "fieldtype": "Data",
+      "description": "Controller-owned DNS A records for this Agent point to this address."
     },
     {
       "fieldname": "environment",
@@ -105,6 +117,9 @@
       "label": "Agent Version",
       "fieldtype": "Data"
     },
+    {"fieldname": "installation_section", "label": "Installation Policy", "fieldtype": "Section Break"},
+    {"fieldname": "allowed_site_suffixes_json", "label": "Allowed Site Suffixes", "fieldtype": "Code", "options": "JSON", "default": "[]", "description": "JSON list, for example [\"kaleam.net\"]"},
+    {"fieldname": "allowed_operations_json", "label": "Allowed Operations", "fieldtype": "Code", "options": "JSON", "default": "[\"site.create\",\"site.create_blank\",\"site.create_from_backup\",\"site.backup\",\"site.restore\",\"site.reinstall\",\"site.delete\",\"site.migrate\",\"site.scheduler.enable\",\"site.scheduler.disable\",\"site.maintenance.enable\",\"site.maintenance.disable\",\"site.config.update\",\"site.verify\",\"operation.cancel\"]"},
     {"fieldname": "drain_requested", "label": "Drain Requested", "fieldtype": "Check", "default": "0", "read_only": 1},
     {"fieldname": "drain_requested_by", "label": "Drain Requested By", "fieldtype": "Link", "options": "User", "read_only": 1},
     {"fieldname": "drain_requested_at", "label": "Drain Requested At", "fieldtype": "Datetime", "read_only": 1},
@@ -212,6 +227,22 @@
       "fieldname": "expected_public_key_sha256",
       "label": "Expected Public Key SHA-256",
       "fieldtype": "Data",
+      "hidden": 1,
+      "no_copy": 1
+    },
+    {
+      "fieldname": "signing_public_key_ed25519",
+      "label": "Agent Signing Public Key (Ed25519)",
+      "fieldtype": "Data",
+      "read_only": 1,
+      "hidden": 1,
+      "no_copy": 1
+    },
+    {
+      "fieldname": "last_signed_request_at_ns",
+      "label": "Last Signed Request Sequence",
+      "fieldtype": "Data",
+      "read_only": 1,
       "hidden": 1,
       "no_copy": 1
     }
