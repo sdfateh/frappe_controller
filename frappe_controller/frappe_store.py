@@ -140,4 +140,8 @@ class FrappeCommandStore:
             "Operation Target", {"operation": operation["name"]}, "state", "leased",
             update_modified=False,
         )
+        # The Agent may immediately make a separate signed DNS/S3 request.
+        # Persist the lease before returning its envelope so that request sees
+        # this operation as active rather than its previous queued state.
+        self.db.commit()
         return json.loads(canonical_json(envelope))
