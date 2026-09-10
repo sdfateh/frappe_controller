@@ -89,7 +89,12 @@ def _dns() -> CloudflareDNS:
 def _error(error: Exception) -> Response:
     if isinstance(error, ControllerRequestError):
         return _response({"accepted": False, "error": error.code}, error.status)
-    if isinstance(error, (ControllerDNSError, ControllerSettingsError)):
+    if isinstance(error, ControllerDNSError):
+        body: dict[str, Any] = {"accepted": False, "error": "dns_provider_failed"}
+        if error.provider_error_codes:
+            body["provider_error_codes"] = list(error.provider_error_codes)
+        return _response(body, 502)
+    if isinstance(error, ControllerSettingsError):
         return _response({"accepted": False, "error": "dns_provider_failed"}, 502)
     return _response({"accepted": False, "error": "internal_error"}, 500)
 

@@ -11,7 +11,24 @@ from urllib.request import Request, urlopen
 
 
 class ControllerDNSError(RuntimeError):
-    pass
+    def __init__(self, message: str, *, provider_error_codes: tuple[int, ...] = ()) -> None:
+        self.provider_error_codes = provider_error_codes
+        super().__init__(message)
+
+
+def _provider_error_codes(value: object) -> tuple[int, ...]:
+    if not isinstance(value, list):
+        return ()
+    codes = []
+    for item in value:
+        if not isinstance(item, Mapping):
+            continue
+        code = item.get("code")
+        if type(code) is int and 0 <= code <= 99_999_999 and code not in codes:
+            codes.append(code)
+        if len(codes) == 8:
+            break
+    return tuple(codes)
 
 
 @dataclass(frozen=True)
@@ -71,7 +88,10 @@ class CloudflareDNS:
         except (UnicodeDecodeError, json.JSONDecodeError):
             raise ControllerDNSError("Cloudflare returned invalid JSON") from None
         if not isinstance(value, Mapping) or value.get("success") is not True:
-            raise ControllerDNSError("Cloudflare rejected the DNS request")
+            codes = _provider_error_codes(value.get("errors")) if isinstance(value, Mapping) else ()
+            raise ControllerDNSError(
+                "Cloudflare rejected the DNS request", provider_error_codes=codes
+            )
         result = value.get("result")
         if not isinstance(result, Mapping):
             raise ControllerDNSError("Cloudflare response is missing DNS evidence")
