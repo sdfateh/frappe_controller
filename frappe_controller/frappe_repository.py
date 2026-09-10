@@ -336,8 +336,8 @@ class FrappeIngestionRepository:
                     "kind": event.kind,
                     "details_json": event.details_json,
                     "body_hash": event.body_hash,
-                    "agent_created_at": event.agent_created_at,
-                    "received_at": event.received_at,
+                    "agent_created_at": _aware(event.agent_created_at).replace(tzinfo=None),
+                    "received_at": _aware(event.received_at).replace(tzinfo=None),
                 }
             ).insert(ignore_permissions=True)
             cursor = event.sequence
@@ -377,9 +377,9 @@ class FrappeIngestionRepository:
             "lease_expires_at": None,
         }
         if state == "running" and operation["state"] != "running":
-            values["started_at"] = result.received_at
+            values["started_at"] = _aware(result.received_at).replace(tzinfo=None)
         if state in {"succeeded", "failed", "cancelled", "timed_out", "needs_intervention", "dead_letter", "rejected"}:
-            values["completed_at"] = result.received_at
+            values["completed_at"] = _aware(result.received_at).replace(tzinfo=None)
         self.db.set_value("Operation", operation["name"], values, update_modified=False)
         self.db.set_value(
             "Operation Target",
@@ -394,12 +394,12 @@ class FrappeIngestionRepository:
                 "error_code": result.error_code,
             }
             if state == "running":
-                bulk_values["started_at"] = result.received_at
+                bulk_values["started_at"] = _aware(result.received_at).replace(tzinfo=None)
             if state in {
                 "succeeded", "failed", "cancelled", "timed_out",
                 "needs_intervention", "dead_letter", "rejected",
             }:
-                bulk_values["completed_at"] = result.received_at
+                bulk_values["completed_at"] = _aware(result.received_at).replace(tzinfo=None)
             self.db.set_value(
                 "Bulk Operation Target", operation["bulk_target"], bulk_values,
                 update_modified=False,
