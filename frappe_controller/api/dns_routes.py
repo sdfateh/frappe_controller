@@ -65,7 +65,9 @@ def _operation(value: Mapping[str, Any], route_action: str) -> tuple[str, str]:
     )
     if not row or row.server_agent != agent_id or row.operation_type not in _CREATE_OPERATIONS:
         raise ControllerRequestError("dns_operation_not_owned", 403)
-    if row.state not in {"leased", "running"}:
+    # Queued is already approved and immutable. The Agent may receive the command
+    # before the lease projection is visible to this separate request.
+    if row.state not in {"queued", "leased", "running"}:
         raise ControllerRequestError("dns_operation_not_active", 409)
     try:
         payload = json.loads(row.payload_json)
