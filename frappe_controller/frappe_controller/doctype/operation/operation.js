@@ -9,6 +9,47 @@ function formatDetails(value) {
   }
 }
 
+const stepLabels = {
+  preflight_reserve: __("Preflight Complete"),
+  resolve_manifest: __("Backup Located"),
+  prefetch_manifest: __("Backup Downloaded"),
+  dns: __("DNS Created"),
+  route: __("Route Created"),
+  new_site: __("Site Created"),
+  restore: __("Backup Restored"),
+  migrate: __("Site Migrated"),
+  scheduler_enable: __("Scheduler Enabled"),
+  verify: __("Site Verified"),
+  complete: __("Completed"),
+};
+
+function renderMilestones(events) {
+  const completed = new Set(
+    events.filter((event) => event.kind === "step.completed").map((event) => event.step)
+  );
+  const milestones = Object.entries(stepLabels)
+    .filter(([step]) => completed.has(step))
+    .map(([, label]) => "<span class=\"badge badge-success\">&#10003; " + escape(label) + "</span>");
+  const failure = [...events].reverse().find(
+    (event) => event.kind === "delivery.controller_failed"
+  );
+  if (failure) {
+    let details = {};
+    try {
+      details = JSON.parse(failure.details_json || "{}");
+    } catch (_) {}
+    const status = details.http_status ? ", HTTP " + escape(details.http_status) : "";
+    milestones.push(
+      "<span class=\"badge badge-danger\">" + escape(__("Controller delivery failed")) +
+      ": " + escape(details.channel || "unknown") + " (" +
+      escape(details.controller_error || "unknown") + status + ")</span>"
+    );
+  }
+  return milestones.length
+    ? "<div class=\"frappe-controller-milestones\" style=\"display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px\">" + milestones.join("") + "</div>"
+    : "";
+}
+
 async function loadJobLog(frm) {
   const field = frm.get_field("job_log");
   if (!field || !frm.doc.name) return;
@@ -40,7 +81,7 @@ async function loadJobLog(frm) {
       ${details ? `<pre>${escape(details)}</pre>` : ""}
     </div>`;
   }).join("");
-  field.$wrapper.html(`<div class="frappe-controller-job-log">${rows}</div>`);
+  field.$wrapper.html(renderMilestones(events) + "<div class=\"frappe-controller-job-log\">" + rows + "</div>");
 }
 
 frappe.ui.form.on("Operation", {
