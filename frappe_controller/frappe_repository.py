@@ -66,6 +66,17 @@ def _json(value: Any) -> str:
     return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
 
 
+
+# For site creation there is no Managed Site yet; bind the result to the immutable payload domain.
+def _created_site_domain(row: Mapping[str, Any]) -> str | None:
+    if row.get("operation_type") not in {"site.create", "site.create_blank", "site.create_from_backup"}:
+        return row.get("site_domain")
+    try:
+        domain = json.loads(row.get("payload_json") or "").get("domain")
+    except (AttributeError, TypeError, json.JSONDecodeError):
+        return None
+    return domain if isinstance(domain, str) else None
+
 def _load_snapshot(encoded: str, digest: str) -> StoredInventory:
     raw = json.loads(encoded)
     heartbeat = parse_heartbeat_state(
@@ -267,7 +278,7 @@ class FrappeIngestionRepository:
         return _row(
             self.db.sql(
                 "SELECT o.name, o.operation_id, a.agent_id, b.bench_id, s.domain AS site_domain, "
-                "o.operation_type, o.state, o.last_event_sequence, o.result_hash, o.result_json, "
+                "o.operation_type, o.payload_json, o.state, o.last_event_sequence, o.result_hash, o.result_json, "
                 "o.bulk_target "
                 "FROM `tabOperation` o JOIN `tabServer Agent` a ON a.name=o.server_agent "
                 "JOIN `tabBench` b ON b.name=o.bench LEFT JOIN `tabManaged Site` s ON s.name=o.managed_site "
@@ -282,7 +293,7 @@ class FrappeIngestionRepository:
         if row is None:
             return None
         return OperationIdentity(
-            row["operation_id"], row["agent_id"], row["bench_id"], row.get("site_domain"),
+            row["operation_id"], row["agent_id"], row["bench_id"], _created_site_domain(row),
             row["operation_type"], row["state"], int(row.get("last_event_sequence") or 0),
         )
 
