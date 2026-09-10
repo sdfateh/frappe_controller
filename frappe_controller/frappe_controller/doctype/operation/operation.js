@@ -1,5 +1,54 @@
+const escape = (value) => frappe.utils.escape_html(String(value ?? ""));
+
+function formatDetails(value) {
+  if (!value) return "";
+  try {
+    return JSON.stringify(JSON.parse(value), null, 2);
+  } catch (_) {
+    return String(value);
+  }
+}
+
+async function loadJobLog(frm) {
+  const field = frm.get_field("job_log");
+  if (!field || !frm.doc.name) return;
+  const operation = frm.doc.name;
+  field.$wrapper.html(`<p class="text-muted">${__("Loading job log…")}</p>`);
+  const response = await frappe.call({
+    method: "frappe.client.get_list",
+    args: {
+      doctype: "Operation Event",
+      filters: { operation },
+      fields: ["sequence", "attempt", "step", "kind", "details_json", "agent_created_at"],
+      order_by: "sequence asc",
+      limit_page_length: 200,
+    },
+  });
+  if (frm.doc.name !== operation) return;
+  const events = response.message || [];
+  if (!events.length) {
+    field.$wrapper.html(`<p class="text-muted">${__("No Agent events received yet.")}</p>`);
+    return;
+  }
+  const rows = events.map((event) => {
+    const details = formatDetails(event.details_json);
+    return `<div class="frappe-controller-job-log-entry">
+      <strong>#${escape(event.sequence)} · ${escape(event.kind)}</strong>
+      <span class="text-muted">${escape(event.agent_created_at)}</span>
+      ${event.step ? `<div>${__("Step")}: ${escape(event.step)}</div>` : ""}
+      ${event.attempt !== null && event.attempt !== undefined ? `<div>${__("Attempt")}: ${escape(event.attempt)}</div>` : ""}
+      ${details ? `<pre>${escape(details)}</pre>` : ""}
+    </div>`;
+  }).join("");
+  field.$wrapper.html(`<div class="frappe-controller-job-log">${rows}</div>`);
+}
+
 frappe.ui.form.on("Operation", {
   refresh(frm) {
+    loadJobLog(frm).catch(() => {
+      const field = frm.get_field("job_log");
+      field?.$wrapper.html(`<p class="text-danger">${__("Could not load the job log.")}</p>`);
+    });
     if (frm.doc.credential_received_at && !frm.doc.credential_consumed_at) {
       frm.add_custom_button(__("Retrieve Administrator Password"), async () => {
         const response = await frappe.call({

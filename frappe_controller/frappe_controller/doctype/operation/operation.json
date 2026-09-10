@@ -36,6 +36,8 @@
     "expires_at",
     "lease_expires_at",
     "last_event_sequence",
+    "job_log_section",
+    "job_log",
     "result_json",
     "result_hash",
     "administrator_credential",
@@ -225,6 +227,17 @@
       "label": "Last Event Sequence",
       "fieldtype": "Int",
       "default": "0",
+      "read_only": 1
+    },
+    {
+      "fieldname": "job_log_section",
+      "label": "Job Log",
+      "fieldtype": "Section Break"
+    },
+    {
+      "fieldname": "job_log",
+      "label": "Job Log",
+      "fieldtype": "HTML",
       "read_only": 1
     },
     {
