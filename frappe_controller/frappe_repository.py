@@ -138,6 +138,8 @@ class FrappeInventoryRepository:
         revision: int,
         observed_at: datetime,
     ) -> None:
+        # Frappe/MariaDB datetime columns store naive UTC values.
+        observed_at = observed_at.astimezone(UTC).replace(tzinfo=None)
         agent = self._agent(agent_id, lock=True)
         if agent is None or not agent.get("enabled"):
             raise InventoryOwnershipError("unknown or disabled agent")
@@ -204,8 +206,8 @@ class FrappeInventoryRepository:
                     "status": "maintenance" if site.maintenance_mode else "active",
                     "installed_apps_json": _json(list(site.apps)),
                     "database_name": site.database_name,
-                    "scheduler_enabled": site.scheduler_enabled,
-                    "maintenance_mode": site.maintenance_mode,
+                    "scheduler_enabled": bool(site.scheduler_enabled),
+                    "maintenance_mode": bool(site.maintenance_mode),
                     "health_status": "healthy" if heartbeat.status == "ready" else "degraded",
                     "inventory_updated_at": observed_at,
                 }

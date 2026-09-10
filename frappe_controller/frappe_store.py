@@ -78,8 +78,10 @@ class FrappeCommandStore:
         command_filter: Callable[[Mapping[str, Any]], bool] | None = None,
     ) -> dict[str, Any] | None:
         current = _utc(now or datetime.now(UTC))
+        # MariaDB DATETIME columns used by Frappe store naive UTC values.
+        database_current = current.replace(tzinfo=None)
         operation_clause = ""
-        parameters: list[Any] = [agent_id, current]
+        parameters: list[Any] = [agent_id, database_current]
         if allowed_operation_types is not None:
             if not allowed_operation_types:
                 return None
@@ -120,6 +122,7 @@ class FrappeCommandStore:
         except DispatchConflict as exc:
             raise ControllerRequestError("command_approval_conflict", 409) from exc
         expires = current + timedelta(seconds=self.command_lifetime_seconds)
+        database_expires = expires.replace(tzinfo=None)
         envelope["issued_at"] = timestamp(current)
         envelope["expires_at"] = timestamp(expires)
         self.db.set_value(
@@ -127,9 +130,9 @@ class FrappeCommandStore:
             operation["name"],
             {
                 "state": "leased",
-                "issued_at": current,
-                "expires_at": expires,
-                "lease_expires_at": expires + timedelta(seconds=self.clock_skew_seconds),
+                "issued_at": database_current,
+                "expires_at": database_expires,
+                "lease_expires_at": database_expires + timedelta(seconds=self.clock_skew_seconds),
             },
             update_modified=False,
         )

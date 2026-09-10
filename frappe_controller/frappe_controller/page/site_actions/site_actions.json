@@ -1,0 +1,8 @@
+{
+  "doctype": "Page",
+  "name": "site-actions",
+  "module": "Frappe Controller",
+  "title": "Site Actions",
+  "icon": "settings",
+  "standard": "Yes"
+}
