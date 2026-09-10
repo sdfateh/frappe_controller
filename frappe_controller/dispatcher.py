@@ -310,13 +310,67 @@ class ApprovalBoundDispatcher:
         return envelope
 
     def validate_persisted(self, operation_name: str, command_json: str, command_hash: str, *, now: datetime) -> dict[str, Any]:
-        envelope = self.envelope(operation_name, now=now, lock=False)
-        if not _SHA256.fullmatch(command_hash or "") or immutable_command_hash(envelope) != command_hash:
-            raise DispatchConflict("persisted command no longer matches approved operation")
         try:
             persisted = json.loads(command_json)
         except (TypeError, json.JSONDecodeError):
             raise DispatchConflict("persisted command is invalid") from None
-        if immutable_command(persisted) != immutable_command(envelope):
-            raise DispatchConflict("persisted command snapshot changed")
+        if not isinstance(persisted, Mapping):
+            raise DispatchConflict("persisted command must be an object")
+        if (
+            not _SHA256.fullmatch(command_hash or "")
+            or immutable_command_hash(persisted) != command_hash
+        ):
+            raise DispatchConflict("persisted command hash changed")
+
+        # A queued command is an approved immutable snapshot. Do not rebuild it
+        # from mutable live inventory here: inventory can legitimately change
+        # while a command waits or executes, and an expired lease must redeliver
+        # the exact same command. Bind the snapshot back to immutable Operation
+        # and Operation Target fields instead.
+        operation = self._operation(operation_name, lock=False)
+        if operation is None:
+            raise DispatchConflict("unknown operation")
+        try:
+            payload = json.loads(operation["payload_json"])
+        except (TypeError, json.JSONDecodeError):
+            raise DispatchConflict("operation payload is invalid JSON") from None
+        expected = {
+            "protocol_version": operation["protocol_version"],
+            "operation_id": operation["operation_id"],
+            "idempotency_key": operation["idempotency_key"],
+            "agent_id": operation["agent_id"],
+            "audience": operation["audience"],
+            "bench_id": operation["bench_id"],
+            "site_id": operation.get("site_id"),
+            "operation": operation["operation_type"],
+            "payload": payload,
+            "requested_by": operation["requested_by"],
+            "payload_hash": operation["payload_hash"],
+        }
+        if any(persisted.get(key) != value for key, value in expected.items()):
+            raise DispatchConflict("persisted command no longer matches operation")
+        if not isinstance(persisted.get("approval_claims"), list):
+            raise DispatchConflict("persisted approval claims are invalid")
+
+        target = self._target(operation_name)
+        if (
+            target["server_agent"] != operation["server_agent"]
+            or target["bench"] != operation["bench"]
+            or (target.get("managed_site") or None) != (operation.get("managed_site") or None)
+            or target["operation_type_snapshot"] != operation["operation_type"]
+            or target["payload_hash_snapshot"] != operation["payload_hash"]
+        ):
+            raise DispatchConflict("operation target snapshot changed")
+        inventory_revision = target.get("inventory_revision_snapshot") or None
+        if inventory_revision is not None and not _SHA256.fullmatch(inventory_revision):
+            raise DispatchConflict("operation inventory snapshot is invalid")
+        if persisted["approval_claims"] != self._approval_claims(operation, target):
+            raise DispatchConflict("persisted approval claims changed")
+
+        envelope = dict(persisted)
+        current = _utc(now)
+        envelope["issued_at"] = timestamp(current)
+        envelope["expires_at"] = timestamp(
+            current + timedelta(seconds=self.command_lifetime_seconds)
+        )
         return envelope

@@ -24,6 +24,7 @@ from frappe_controller.bulk import (
 from frappe_controller.bulk_orchestrator import BulkOrchestrator
 from frappe_controller.frappe_bulk_orchestration import FrappeBulkRepository
 from frappe_controller.frappe_store import FrappeCommandStore
+from frappe_controller.dispatcher import DispatchConflict, immutable_command_hash
 from frappe_controller.api.operations import create_operation, start_operation
 from frappe_controller.api.data_updates import preview_data_update, promote_data_update
 from frappe_controller.data_update_authoring import canonical_hash
@@ -601,11 +602,108 @@ class TestDisposableControllerSite(FrappeTestCase):
             ).insert(ignore_permissions=True)
         finally:
             frappe.set_user("Administrator")
+        initial_inventory = "a" * 64
+        frappe.db.set_value(
+            "Server Agent", agent_id, "inventory_digest", initial_inventory
+        )
+        frappe.db.set_value(
+            "Operation Target", {"operation": operation.name},
+            "inventory_revision_snapshot", initial_inventory,
+        )
 
         now = datetime.now(UTC)
         store = FrappeCommandStore(command_lifetime_seconds=60, clock_skew_seconds=5)
         queued = store.enqueue_approved_operation(operation.name, now=now)
         self.assertEqual(agent_id, queued["agent_id"])
+        command_json, command_hash = frappe.db.get_value(
+            "Operation", operation.name, ["command_json", "command_hash"]
+        )
+        dispatcher = store.dispatcher
+        with self.assertRaisesRegex(DispatchConflict, "persisted command is invalid"):
+            dispatcher.validate_persisted(operation.name, "{", command_hash, now=now)
+        with self.assertRaisesRegex(DispatchConflict, "persisted command must be an object"):
+            dispatcher.validate_persisted(operation.name, "[]", command_hash, now=now)
+        with self.assertRaisesRegex(DispatchConflict, "persisted command hash changed"):
+            dispatcher.validate_persisted(
+                operation.name, command_json, "0" * 64, now=now
+            )
+
+        persisted = json.loads(command_json)
+        changed_operation = dict(persisted, operation="site.restore")
+        with self.assertRaisesRegex(
+            DispatchConflict, "persisted command no longer matches operation"
+        ):
+            dispatcher.validate_persisted(
+                operation.name,
+                json.dumps(changed_operation),
+                immutable_command_hash(changed_operation),
+                now=now,
+            )
+        changed_site = dict(persisted, site_id="another-site")
+        with self.assertRaisesRegex(
+            DispatchConflict, "persisted command no longer matches operation"
+        ):
+            dispatcher.validate_persisted(
+                operation.name,
+                json.dumps(changed_site),
+                immutable_command_hash(changed_site),
+                now=now,
+            )
+        invalid_claims = dict(persisted, approval_claims={})
+        with self.assertRaisesRegex(
+            DispatchConflict, "persisted approval claims are invalid"
+        ):
+            dispatcher.validate_persisted(
+                operation.name,
+                json.dumps(invalid_claims),
+                immutable_command_hash(invalid_claims),
+                now=now,
+            )
+        changed_claims = dict(persisted)
+        changed_claims["approval_claims"] = [
+            dict(persisted["approval_claims"][0], approved_by="Administrator")
+        ]
+        with self.assertRaisesRegex(
+            DispatchConflict, "persisted approval claims changed"
+        ):
+            dispatcher.validate_persisted(
+                operation.name,
+                json.dumps(changed_claims),
+                immutable_command_hash(changed_claims),
+                now=now,
+            )
+
+        frappe.db.set_value(
+            "Operation Target", {"operation": operation.name},
+            "payload_hash_snapshot", "c" * 64,
+        )
+        with self.assertRaisesRegex(DispatchConflict, "operation target snapshot changed"):
+            dispatcher.validate_persisted(
+                operation.name, command_json, command_hash, now=now
+            )
+        frappe.db.set_value(
+            "Operation Target", {"operation": operation.name},
+            "payload_hash_snapshot", operation.payload_hash,
+        )
+        frappe.db.set_value(
+            "Operation Target", {"operation": operation.name},
+            "inventory_revision_snapshot", "invalid",
+        )
+        with self.assertRaisesRegex(
+            DispatchConflict, "operation inventory snapshot is invalid"
+        ):
+            dispatcher.validate_persisted(
+                operation.name, command_json, command_hash, now=now
+            )
+        frappe.db.set_value(
+            "Operation Target", {"operation": operation.name},
+            "inventory_revision_snapshot", initial_inventory,
+        )
+
+        # A later heartbeat is normal and must not invalidate an approved command.
+        frappe.db.set_value(
+            "Server Agent", agent_id, "inventory_digest", "b" * 64
+        )
         first = store.lease_command(agent_id, now=now)
         self.assertEqual(operation.operation_id, first["operation_id"])
         self.assertIsNone(store.lease_command(agent_id, now=now))
