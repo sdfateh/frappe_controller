@@ -9,6 +9,16 @@ function formatDetails(value) {
   }
 }
 
+function eventStep(event) {
+  if (event.step) return event.step;
+  try {
+    const details = JSON.parse(event.details_json || "{}");
+    return typeof details.step === "string" ? details.step : "";
+  } catch (_) {
+    return "";
+  }
+}
+
 const stepLabels = {
   preflight_reserve: __("Preflight Complete"),
   resolve_manifest: __("Backup Located"),
@@ -25,7 +35,7 @@ const stepLabels = {
 
 function renderMilestones(events) {
   const completed = new Set(
-    events.filter((event) => event.kind === "step.completed").map((event) => event.step)
+    events.filter((event) => event.kind === "step.completed").map(eventStep)
   );
   const milestones = Object.entries(stepLabels)
     .filter(([step]) => completed.has(step))
@@ -73,10 +83,11 @@ async function loadJobLog(frm) {
   }
   const rows = events.map((event) => {
     const details = formatDetails(event.details_json);
+    const step = eventStep(event);
     return `<div class="frappe-controller-job-log-entry">
       <strong>#${escape(event.sequence)} · ${escape(event.kind)}</strong>
       <span class="text-muted">${escape(event.agent_created_at)}</span>
-      ${event.step ? `<div>${__("Step")}: ${escape(event.step)}</div>` : ""}
+      ${step ? `<div>${__("Step")}: ${escape(step)}</div>` : ""}
       ${event.attempt !== null && event.attempt !== undefined ? `<div>${__("Attempt")}: ${escape(event.attempt)}</div>` : ""}
       ${details ? `<pre>${escape(details)}</pre>` : ""}
     </div>`;

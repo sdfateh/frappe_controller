@@ -361,7 +361,24 @@ class FrappeIngestionRepository:
         row = self._operation_row(operation_id)
         if row is None or not row.get("result_hash"):
             return None
-        return StoredResult(operation_id, row["state"], row["result_hash"], row.get("result_json") or "null")
+        result_json = row.get("result_json") or "null"
+        try:
+            stored_result = json.loads(result_json)
+            result_status = stored_result["status"]
+        except (json.JSONDecodeError, KeyError, TypeError):
+            raise IngestionConflictError("stored result is invalid") from None
+        if not isinstance(result_status, str):
+            raise IngestionConflictError("stored result is invalid")
+        # The Operation state becomes ``leased`` when a command is polled, but
+        # its latest submitted result can still be the earlier ``queued`` ack.
+        # Result monotonicity must compare against that submitted result, not
+        # against the independent command-lifecycle state on the parent row.
+        return StoredResult(
+            operation_id,
+            result_status,
+            row["result_hash"],
+            result_json,
+        )
 
     def commit_result(
         self,
@@ -381,29 +398,39 @@ class FrappeIngestionRepository:
             raise IngestionConflictError("result compare-and-set conflict")
         state = result.status
         values: dict[str, Any] = {
-            "state": state,
             "result_json": result.result_json,
             "result_hash": result.body_hash,
             "error_code": result.error_code,
-            "lease_expires_at": None,
         }
+        # A queued acknowledgement confirms durable receipt by the Agent; it
+        # does not finish the Controller's active command lease. Reverting the
+        # row to queued here makes the same command immediately pollable again.
+        if state != "queued":
+            values.update({"state": state, "lease_expires_at": None})
         if state == "running" and operation["state"] != "running":
             values["started_at"] = _aware(result.received_at).replace(tzinfo=None)
         if state in {"succeeded", "failed", "cancelled", "timed_out", "needs_intervention", "dead_letter", "rejected"}:
             values["completed_at"] = _aware(result.received_at).replace(tzinfo=None)
         self.db.set_value("Operation", operation["name"], values, update_modified=False)
+        target_values: dict[str, Any] = {
+            "result_json": result.result_json,
+            "error_code": result.error_code,
+        }
+        if state != "queued":
+            target_values["state"] = state
         self.db.set_value(
             "Operation Target",
             {"operation": operation["name"]},
-            {"state": state, "result_json": result.result_json, "error_code": result.error_code},
+            target_values,
             update_modified=False,
         )
         if operation.get("bulk_target"):
             bulk_values: dict[str, Any] = {
-                "state": state,
                 "result_json": result.result_json,
                 "error_code": result.error_code,
             }
+            if state != "queued":
+                bulk_values["state"] = state
             if state == "running":
                 bulk_values["started_at"] = _aware(result.received_at).replace(tzinfo=None)
             if state in {
