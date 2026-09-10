@@ -11,7 +11,7 @@ from frappe_controller.frappe_controller.doctype._invariants import (
 _TERMINAL = frozenset({"succeeded", "failed", "cancelled", "timed_out", "needs_intervention", "dead_letter", "rejected"})
 _TRANSITIONS = {
     "awaiting_approval": frozenset({"queued", "cancelled"}),
-    "queued": frozenset({"leased", "cancelled", "timed_out"}),
+    "queued": frozenset({"leased", "failed", "cancelled", "timed_out"}),
     "leased": frozenset({"queued", "running", "cancelled", "timed_out"}),
     "running": frozenset({"queued", *_TERMINAL}),
     **{state: frozenset() for state in _TERMINAL},

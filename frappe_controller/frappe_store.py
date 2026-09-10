@@ -89,10 +89,12 @@ class FrappeCommandStore:
                 ["%s"] * len(allowed_operation_types)
             ) + ")"
             parameters.extend(allowed_operation_types)
-        limit = 1001 if command_filter is not None else 1
+        # Inspect a bounded batch so one invalid persisted command cannot remain
+        # at the head of the queue and prevent every later command from leasing.
+        limit = 1001
         rows = self.db.sql(
             "SELECT o.name, o.command_json, o.command_hash, o.operation_type, "
-            "o.payload_json, o.bulk_parent, "
+            "o.payload_json, o.bulk_parent, o.bulk_target, "
             "COALESCE(bt.environment_snapshot,s.environment,a.environment) "
             "AS target_environment FROM `tabOperation` o "
             "JOIN `tabServer Agent` a ON a.name=o.server_agent "
@@ -106,21 +108,45 @@ class FrappeCommandStore:
             tuple(parameters),
             as_dict=True,
         )
-        operation = next(
-            (
-                row for row in rows
-                if command_filter is None or command_filter(row)
-            ),
-            None,
-        )
-        if operation is None:
+        operation = None
+        envelope = None
+        quarantined = False
+        for candidate in rows:
+            if command_filter is not None and not command_filter(candidate):
+                continue
+            try:
+                envelope = self.dispatcher.validate_persisted(
+                    candidate["name"], candidate["command_json"], candidate["command_hash"], now=current
+                )
+            except DispatchConflict as exc:
+                quarantined = True
+                failure = {
+                    "state": "failed",
+                    "error_code": "command_snapshot_conflict",
+                    "completed_at": database_current,
+                }
+                self.db.set_value("Operation", candidate["name"], failure, update_modified=False)
+                self.db.set_value(
+                    "Operation Target", {"operation": candidate["name"]},
+                    {"state": failure["state"], "error_code": failure["error_code"]},
+                    update_modified=False,
+                )
+                if candidate.get("bulk_target"):
+                    self.db.set_value(
+                        "Bulk Operation Target", candidate["bulk_target"], failure,
+                        update_modified=False,
+                    )
+                self.frappe.log_error(
+                    title="Queued command snapshot conflict",
+                    message=f"Operation {candidate['name']} was quarantined before lease: {exc}",
+                )
+                continue
+            operation = candidate
+            break
+        if operation is None or envelope is None:
+            if quarantined:
+                self.db.commit()
             return None
-        try:
-            envelope = self.dispatcher.validate_persisted(
-                operation["name"], operation["command_json"], operation["command_hash"], now=current
-            )
-        except DispatchConflict as exc:
-            raise ControllerRequestError("command_approval_conflict", 409) from exc
         expires = current + timedelta(seconds=self.command_lifetime_seconds)
         database_expires = expires.replace(tzinfo=None)
         envelope["issued_at"] = timestamp(current)

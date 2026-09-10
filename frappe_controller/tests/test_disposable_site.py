@@ -623,6 +623,42 @@ class TestDisposableControllerSite(FrappeTestCase):
         ):
             self.assertEqual(first[field], redelivered[field], field)
 
+    def test_invalid_queued_command_is_quarantined_without_blocking_next_command(self) -> None:
+        agent_id = "quarantine-dispatch-agent"
+        bench_id = "quarantine-dispatch-bench"
+        self._insert_agent(agent_id)
+        self._insert_bench(agent_id, bench_id)
+        poisoned = self._insert_operation(agent_id, bench_id, state="awaiting_approval")
+        healthy = self._insert_operation(agent_id, bench_id, state="awaiting_approval")
+
+        now = datetime.now(UTC)
+        store = FrappeCommandStore()
+        store.enqueue_approved_operation(poisoned.name, now=now)
+        store.enqueue_approved_operation(healthy.name, now=now)
+        frappe.db.set_value(
+            "Operation", poisoned.name, "command_hash", "0" * 64,
+            update_modified=False,
+        )
+
+        leased = store.lease_command(agent_id, now=now)
+
+        self.assertIsNotNone(leased)
+        assert leased is not None
+        self.assertEqual(healthy.operation_id, leased["operation_id"])
+        self.assertEqual(
+            {"state": "failed", "error_code": "command_snapshot_conflict"},
+            dict(frappe.db.get_value(
+                "Operation", poisoned.name, ["state", "error_code"], as_dict=True
+            )),
+        )
+        self.assertEqual(
+            {"state": "failed", "error_code": "command_snapshot_conflict"},
+            dict(frappe.db.get_value(
+                "Operation Target", {"operation": poisoned.name},
+                ["state", "error_code"], as_dict=True,
+            )),
+        )
+
     def test_bulk_persistence_is_service_only_approval_bound_and_single_child(self) -> None:
         agent_id = "bulk-integration-agent"
         bench_id = "bulk-integration-bench"
