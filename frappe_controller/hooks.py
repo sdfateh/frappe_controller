@@ -4,8 +4,17 @@ app_publisher = "Frappe Controller maintainers"
 app_description = "Central control plane for allowlisted Frappe server agents"
 app_email = "security@example.invalid"
 app_license = "MIT"
-required_apps = ["frappe"]
+required_apps = ["frappe", "erpnext"]
 app_include_js = ["/assets/frappe_controller/js/controller_workspace.js"]
+doctype_js = {
+    "Customer": "public/js/customer.js",
+}
+fixtures = [
+    {
+        "dt": "Custom Field",
+        "filters": [["name", "in", ["Customer-controller_production_managed_site"]]],
+    },
+]
 extend_bootinfo = "frappe_controller.feature_flags.extend_bootinfo"
 
 _CONTROLLER_ROLES = ("Controller Admin", "Operator", "Approver", "Auditor")
@@ -37,6 +46,9 @@ def ensure_controller_roles():
                     "is_custom": 0,
                 }
             ).insert(ignore_permissions=True)
+    from frappe_controller.operation_catalog import sync_operation_types
+
+    sync_operation_types(frappe)
     if frappe.db.exists("Workspace", "Frappe Controller"):
         from frappe_controller.feature_flags import sync_workspace_visibility
 

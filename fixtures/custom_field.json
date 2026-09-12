@@ -1,0 +1,14 @@
+[
+  {
+    "doctype": "Custom Field",
+    "dt": "Customer",
+    "name": "Customer-controller_production_managed_site",
+    "fieldname": "controller_production_managed_site",
+    "label": "Production Managed Site",
+    "fieldtype": "Link",
+    "options": "Managed Site",
+    "insert_after": "customer_name",
+    "read_only": 1,
+    "description": "The production site requested from this customer. It resolves to a Managed Site after provisioning is discovered by inventory."
+  }
+]

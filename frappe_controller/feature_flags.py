@@ -373,6 +373,7 @@ def sync_workspace_visibility(frappe_module: Any | None = None) -> dict[str, boo
         "Managed Sites": "Fleet Inventory",
         "Operations and Failures": "Operations and Failures",
         "Operations": "Operations and Failures",
+        "Operation Types": "Operations and Failures",
         "Agent Operations": "Operations and Failures",
         "Operation Failures": "Operations and Failures",
         "Bulk Operations": "Bulk Operations",
