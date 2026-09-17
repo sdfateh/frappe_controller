@@ -1,4 +1,5 @@
 import json
+from urllib.parse import quote
 
 import frappe
 from frappe.model.document import Document
@@ -180,6 +181,47 @@ class Operation(Document):
             if not self.flags.get("controller_service"):
                 frappe.throw("Operation credential fields are service-owned", frappe.PermissionError)
         legal_transition(self, _TRANSITIONS)
+
+    def after_insert(self):
+        if self.approval_status != "pending" or not self.approval_policy:
+            return
+        notify = frappe.db.get_value(
+            "Approval Policy", self.approval_policy, "notify_approvers_by_email"
+        )
+        if not notify:
+            return
+        approver_users = frappe.get_all(
+            "Has Role",
+            filters={"role": "Approver", "parenttype": "User"},
+            pluck="parent",
+        )
+        if not approver_users:
+            return
+        recipients = frappe.get_all(
+            "User",
+            filters={
+                "name": ["in", sorted(set(approver_users) - {self.requested_by})],
+                "enabled": 1,
+            },
+            pluck="email",
+        )
+        operation_url = frappe.utils.get_url(
+            f"/app/operation/{quote(self.operation_id, safe='')}"
+        )
+        for recipient in sorted({email for email in recipients if email}):
+            frappe.sendmail(
+                recipients=[recipient],
+                subject=f"Approval requested: {self.operation_type}",
+                message=(
+                    "<p>An operation requires your approval.</p>"
+                    f"<p><strong>Operation:</strong> {frappe.utils.escape_html(self.operation_type)}</p>"
+                    f"<p><strong>Requested by:</strong> {frappe.utils.escape_html(self.requested_by)}</p>"
+                    f'<p><a href="{frappe.utils.escape_html(operation_url)}">Review approval request</a></p>'
+                ),
+                reference_doctype="Operation",
+                reference_name=self.operation_id,
+                redact_message_after_send=True,
+            )
 
     def on_trash(self):
         prevent_delete("Operation")

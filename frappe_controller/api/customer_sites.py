@@ -16,6 +16,7 @@ from ..operation_service import OperationAuthoringError, OperationAuthoringServi
 
 
 _AUTHOR_ROLES = frozenset({"Controller Admin", "Operator"})
+_MANAGED_SITE_FIELD = "controller_production_managed_site"
 
 
 def _text(value: Any, label: str) -> str:
@@ -38,6 +39,26 @@ def _command_lifetime() -> int:
     return value
 
 
+def protect_managed_site_link(doc: Any, _method: str | None = None) -> None:
+    """Reject Customer link changes outside controller-owned service functions."""
+    previous = doc.get_doc_before_save()
+    old_value = previous.get(_MANAGED_SITE_FIELD) if previous else None
+    new_value = doc.get(_MANAGED_SITE_FIELD)
+    if old_value != new_value and not doc.flags.get("controller_managed_site_update"):
+        frappe.throw(
+            "Production Managed Site is controlled by Frappe Controller",
+            frappe.PermissionError,
+        )
+
+
+def _set_managed_site_link(customer: str, managed_site: str) -> None:
+    """Update the protected Customer link through the controller service boundary."""
+    customer_doc = frappe.get_doc("Customer", customer)
+    customer_doc.flags.controller_managed_site_update = True
+    customer_doc.set(_MANAGED_SITE_FIELD, managed_site)
+    customer_doc.save(ignore_permissions=True)
+
+
 @frappe.whitelist(methods=["POST"])
 def create_production_site(
     customer: str, domain: str, server_agent: str, bench: str
@@ -47,7 +68,7 @@ def create_production_site(
     customer = _text(customer, "Customer")
     if not frappe.db.exists("Customer", customer):
         frappe.throw("Customer does not exist", frappe.DoesNotExistError)
-    if frappe.db.get_value("Customer", customer, "controller_production_managed_site"):
+    if frappe.db.get_value("Customer", customer, _MANAGED_SITE_FIELD):
         frappe.throw(
             "Customer already has a production Managed Site; clear or replace it before requesting another",
             frappe.ValidationError,
@@ -77,10 +98,7 @@ def create_production_site(
         )
         # Managed Site names are stable domains.  The link becomes resolvable when
         # the agent's next inventory heartbeat reports the newly created site.
-        frappe.db.set_value(
-            "Customer", customer, "controller_production_managed_site", payload["domain"],
-            update_modified=False,
-        )
+        _set_managed_site_link(customer, payload["domain"])
         state = authored.state
         if authored.required_approvals == 0:
             FrappeCommandStore(
@@ -92,4 +110,4 @@ def create_production_site(
         frappe.throw(str(exc), frappe.ValidationError)
 
 
-__all__ = ["create_production_site"]
+__all__ = ["create_production_site", "protect_managed_site_link"]

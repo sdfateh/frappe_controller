@@ -15,6 +15,7 @@
     "environment",
     "operation_pattern",
     "minimum_approvals",
+    "notify_approvers_by_email",
     "require_distinct_approvers",
     "prohibit_requester_approval",
     "require_backup",
@@ -57,6 +58,13 @@
       "fieldtype": "Int",
       "default": "1",
       "reqd": 1
+    },
+    {
+      "fieldname": "notify_approvers_by_email",
+      "label": "Email Approvers When Approval Is Requested",
+      "fieldtype": "Check",
+      "default": "0",
+      "description": "Send each enabled Approver a link to the Operation. These messages use Frappe email and are retained in its normal email records."
     },
     {
       "fieldname": "require_distinct_approvers",

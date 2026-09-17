@@ -5,6 +5,7 @@ from frappe_controller.frappe_controller.doctype._invariants import immutable_fi
 
 _POLICY_FIELDS = (
     "policy_name", "environment", "operation_pattern", "minimum_approvals",
+    "notify_approvers_by_email",
     "require_distinct_approvers", "prohibit_requester_approval", "require_backup",
     "bulk_threshold", "maximum_targets",
 )

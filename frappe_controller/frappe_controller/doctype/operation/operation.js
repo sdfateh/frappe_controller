@@ -101,6 +101,33 @@ frappe.ui.form.on("Operation", {
       const field = frm.get_field("job_log");
       field?.$wrapper.html(`<p class="text-danger">${__("Could not load the job log.")}</p>`);
     });
+    const canApprove = frappe.user_roles.includes("Approver") &&
+      frm.doc.approval_status === "pending" &&
+      frm.doc.requested_by !== frappe.session.user;
+    if (canApprove) {
+      const decide = (decision) => {
+        frappe.prompt(
+          [{ fieldname: "comment", label: __("Comment"), fieldtype: "Small Text" }],
+          async (values) => {
+            await frappe.call({
+              method: "frappe_controller.api.approvals.decide_operation",
+              args: {
+                operation_id: frm.doc.operation_id,
+                decision,
+                comment: values.comment || "",
+              },
+              type: "POST",
+              freeze: true,
+            });
+            await frm.reload_doc();
+          },
+          decision === "approved" ? __("Approve Operation") : __("Reject Operation"),
+          decision === "approved" ? __("Approve") : __("Reject")
+        );
+      };
+      frm.add_custom_button(__("Approve"), () => decide("approved"), __("Approval"));
+      frm.add_custom_button(__("Reject"), () => decide("rejected"), __("Approval"));
+    }
     if (frm.doc.credential_received_at && !frm.doc.credential_consumed_at) {
       frm.add_custom_button(__("Retrieve Administrator Password"), async () => {
         const response = await frappe.call({

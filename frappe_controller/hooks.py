@@ -9,6 +9,11 @@ app_include_js = ["/assets/frappe_controller/js/controller_workspace.js"]
 doctype_js = {
     "Customer": "public/js/customer.js",
 }
+doc_events = {
+    "Customer": {
+        "before_save": "frappe_controller.api.customer_sites.protect_managed_site_link",
+    },
+}
 fixtures = [
     {
         "dt": "Custom Field",
