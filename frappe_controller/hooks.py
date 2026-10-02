@@ -5,7 +5,11 @@ app_description = "Central control plane for allowlisted Frappe server agents"
 app_email = "security@example.invalid"
 app_license = "MIT"
 required_apps = ["frappe", "erpnext"]
-app_include_js = ["/assets/frappe_controller/js/controller_workspace.js"]
+app_include_js = [
+    "/assets/frappe_controller/js/controller_workspace.js",
+    "/assets/frappe_controller/js/operation_timeline.js",
+]
+app_include_css = ["/assets/frappe_controller/css/operation_timeline.css"]
 doctype_js = {
     "Customer": "public/js/customer.js",
 }
@@ -17,7 +21,10 @@ doc_events = {
 fixtures = [
     {
         "dt": "Custom Field",
-        "filters": [["name", "in", ["Customer-controller_production_managed_site"]]],
+        "filters": [["name", "in", [
+            "Customer-controller_production_managed_site",
+            "Customer-controller_site_creation_operation",
+        ]]],
     },
 ]
 extend_bootinfo = "frappe_controller.feature_flags.extend_bootinfo"
@@ -31,7 +38,8 @@ before_install = "frappe_controller.hooks.ensure_controller_roles"
 scheduler_events = {
     "cron": {
         "* * * * *": [
-            "frappe_controller.frappe_bulk_orchestration.reconcile_bulk_operations"
+            "frappe_controller.frappe_bulk_orchestration.reconcile_bulk_operations",
+            "frappe_controller.api.customer_sites.reconcile_customer_sites",
         ]
     }
 }

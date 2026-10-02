@@ -1,0 +1,28 @@
+.fc-operation-timeline { max-width: 980px; padding: 4px 0 16px; }
+.fc-timeline-summary { padding: 14px 18px; border: 1px solid var(--border-color, #ddd); border-radius: 8px; background: var(--subtle-fg, #f8f9fa); margin-bottom: 12px; }
+.fc-timeline-summary strong { display: block; font-size: 16px; margin-bottom: 4px; }
+.fc-timeline-caption { font-size: 12px; }
+.fc-timeline { list-style: none; padding: 0 0 0 16px; margin: 20px 0; }
+.fc-timeline-step { position: relative; border-left: 2px solid var(--border-color, #ddd); padding: 0 0 20px 28px; min-height: 58px; }
+.fc-timeline-step:last-child { border-left-color: transparent; padding-bottom: 0; }
+.fc-timeline-marker { position: absolute; left: -14px; top: 0; width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; font-size: 12px; font-weight: 700; color: var(--text-muted, #68737d); background: var(--control-bg, #f3f3f3); border: 2px solid var(--border-color, #ddd); }
+.fc-timeline-step summary { cursor: pointer; padding: 3px 0; min-height: 28px; }
+.fc-timeline-label { font-weight: 600; margin-right: 10px; }
+.fc-timeline-badge { font-size: 11px; padding: 3px 8px; border-radius: 12px; color: var(--text-muted, #68737d); background: var(--control-bg, #f3f3f3); white-space: nowrap; }
+.fc-timeline-step[data-status="completed"] .fc-timeline-marker,
+.fc-timeline-step[data-status="completed"] .fc-timeline-badge { color: #166534; background: #dcfce7; border-color: #86efac; }
+.fc-timeline-step[data-status="running"] .fc-timeline-marker,
+.fc-timeline-step[data-status="running"] .fc-timeline-badge { color: #1e40af; background: #dbeafe; border-color: #93c5fd; }
+.fc-timeline-step[data-status="stopped"] .fc-timeline-marker,
+.fc-timeline-step[data-status="stopped"] .fc-timeline-badge,
+.fc-timeline-step[data-status="failed"] .fc-timeline-marker,
+.fc-timeline-step[data-status="failed"] .fc-timeline-badge { color: #991b1b; background: #fee2e2; border-color: #fca5a5; }
+.fc-timeline-step[data-status="compensated"] .fc-timeline-marker,
+.fc-timeline-step[data-status="compensated"] .fc-timeline-badge,
+.fc-timeline-step[data-status="retrying"] .fc-timeline-badge { color: #92400e; background: #fef3c7; border-color: #fcd34d; }
+.fc-timeline-details { margin-top: 8px; padding: 12px; border: 1px solid var(--border-color, #ddd); border-radius: 6px; }
+.fc-timeline-event { padding: 8px 0; border-bottom: 1px solid var(--border-color, #ddd); }
+.fc-timeline-event > span { display: inline-block; font-size: 12px; margin-left: 8px; }
+.fc-timeline-event pre { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 12px; margin: 6px 0; max-height: 260px; overflow: auto; }
+.fc-timeline-raw { margin-top: 20px; border-top: 1px solid var(--border-color, #ddd); padding-top: 12px; }
+@media (max-width: 576px) { .fc-timeline-label { display: inline-block; } .fc-timeline-details { padding: 8px; } }

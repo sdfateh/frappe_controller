@@ -77,6 +77,7 @@ class BenchSnapshot:
     versions: tuple[tuple[str, str], ...]
     capabilities: tuple[str, ...]
     sites: tuple[SiteSnapshot, ...]
+    required_apps: tuple[str, ...] | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -85,7 +86,11 @@ class InventorySnapshot:
     inventory_version: str
     benches: tuple[BenchSnapshot, ...]
     def canonical_json(self) -> str:
-        return json.dumps(asdict(self), sort_keys=True, separators=(",", ":"))
+        value = asdict(self)
+        for bench in value["benches"]:
+            if bench["required_apps"] is None:
+                del bench["required_apps"]
+        return json.dumps(value, sort_keys=True, separators=(",", ":"))
     @property
     def digest(self) -> str:
         return hashlib.sha256(self.canonical_json().encode()).hexdigest()
@@ -172,7 +177,7 @@ def _parse_inventory(value: object) -> InventorySnapshot:
 
 def _parse_bench(value: object, index: int) -> BenchSnapshot:
     name = f"benches[{index}]"; raw = _obj(value, name)
-    _exact(raw, {"bench_id", "versions", "capabilities", "sites"}, name)
+    _exact(raw, {"bench_id", "versions", "capabilities", "sites"} | ({"required_apps"} if "required_apps" in raw else set()), name)
     bench_id = _text(raw["bench_id"], f"{name}.bench_id", 64)
     if not _BENCH.fullmatch(bench_id): raise InventorySchemaError("invalid bench_id")
     caps = tuple(_text(item, "capability", 128) for item in _array(raw["capabilities"], "capabilities", 128))
@@ -180,7 +185,12 @@ def _parse_bench(value: object, index: int) -> BenchSnapshot:
     sites = tuple(_parse_site(item, name, i) for i, item in enumerate(_array(raw["sites"], "sites", 10_000)))
     domains = [item.domain for item in sites]
     if domains != sorted(domains) or len(domains) != len(set(domains)): raise InventorySchemaError("sites must be sorted and unique")
-    return BenchSnapshot(bench_id, _pairs(raw["versions"], "versions", 128), caps, sites)
+    required_apps = None
+    if "required_apps" in raw:
+        required_apps = tuple(_text(item, "required_app", 64) for item in _array(raw["required_apps"], "required_apps", 128))
+        if not required_apps or "frappe" not in required_apps or len(set(required_apps)) != len(required_apps) or any(not re.fullmatch(r"[a-z][a-z0-9_]{0,63}", app) for app in required_apps):
+            raise InventorySchemaError("required_apps must be unique app names including frappe")
+    return BenchSnapshot(bench_id, _pairs(raw["versions"], "versions", 128), caps, sites, required_apps)
 
 
 def _parse_site(value: object, parent: str, index: int) -> SiteSnapshot:

@@ -11,6 +11,7 @@ from datetime import UTC, datetime
 from typing import Any, Mapping
 
 try:  # Support both an installed Frappe app and dependency-free unit imports.
+    from .creation_readiness import creation_handover_ready
     from .ingestion import (
         IngestedEvent,
         IngestedResult,
@@ -29,6 +30,7 @@ try:  # Support both an installed Frappe app and dependency-free unit imports.
         parse_heartbeat_state,
     )
 except ImportError:  # pragma: no cover - used by the standalone controller tests
+    from creation_readiness import creation_handover_ready
     from ingestion import (  # type: ignore
         IngestedEvent,
         IngestedResult,
@@ -200,6 +202,7 @@ class FrappeInventoryRepository:
                 "frappe_version": versions.get("frappe"),
                 "erpnext_version": versions.get("erpnext"),
                 "installed_apps_json": _json(list(bench.versions)),
+                "required_apps_json": _json(list(bench.required_apps)) if bench.required_apps is not None else "[]",
                 "capabilities_json": _json(list(bench.capabilities)),
                 "health_status": "healthy" if heartbeat.status == "ready" else "degraded",
                 "inventory_updated_at": observed_at,
@@ -279,7 +282,7 @@ class FrappeIngestionRepository:
             self.db.sql(
                 "SELECT o.name, o.operation_id, a.agent_id, b.bench_id, s.domain AS site_domain, "
                 "o.operation_type, o.payload_json, o.state, o.last_event_sequence, o.result_hash, o.result_json, "
-                "o.bulk_target "
+                "o.bulk_target, o.credential_received_at, b.required_apps_json "
                 "FROM `tabOperation` o JOIN `tabServer Agent` a ON a.name=o.server_agent "
                 "JOIN `tabBench` b ON b.name=o.bench LEFT JOIN `tabManaged Site` s ON s.name=o.managed_site "
                 f"WHERE o.operation_id=%s{suffix}",
@@ -397,10 +400,28 @@ class FrappeIngestionRepository:
                 return
             raise IngestionConflictError("result compare-and-set conflict")
         state = result.status
+        error_code = result.error_code
+        if (
+            state == "succeeded"
+            and operation.get("operation_type") in {"site.create", "site.create_blank", "site.create_from_backup"}
+            and not creation_handover_ready(
+                result.result_json, operation.get("credential_received_at"), operation.get("required_apps_json") or "[]",
+            )
+        ):
+            reported = json.loads(result.result_json).get("result")
+            if isinstance(reported, dict) and "readiness" not in reported:
+                # A pre-upgrade Agent may already have durably finished this
+                # job. Its immutable result cannot acquire new evidence on
+                # replay. Acknowledge receipt, preserve the exact result/hash,
+                # and close the lease WITHOUT asserting successful handover.
+                state = "needs_intervention"
+                error_code = "site_handover_unverified"
+            else:
+                raise IngestionConflictError("site creation success requires app/public HTTPS evidence and acknowledged credential delivery")
         values: dict[str, Any] = {
             "result_json": result.result_json,
             "result_hash": result.body_hash,
-            "error_code": result.error_code,
+            "error_code": error_code,
         }
         # A queued acknowledgement confirms durable receipt by the Agent; it
         # does not finish the Controller's active command lease. Reverting the
@@ -414,7 +435,7 @@ class FrappeIngestionRepository:
         self.db.set_value("Operation", operation["name"], values, update_modified=False)
         target_values: dict[str, Any] = {
             "result_json": result.result_json,
-            "error_code": result.error_code,
+            "error_code": error_code,
         }
         if state != "queued":
             target_values["state"] = state
@@ -427,7 +448,7 @@ class FrappeIngestionRepository:
         if operation.get("bulk_target"):
             bulk_values: dict[str, Any] = {
                 "result_json": result.result_json,
-                "error_code": result.error_code,
+                "error_code": error_code,
             }
             if state != "queued":
                 bulk_values["state"] = state

@@ -118,7 +118,7 @@ class Operation(Document):
         if self.managed_site:
             require_link_value("Managed Site", self.managed_site, "bench", self.bench)
             require_link_value("Managed Site", self.managed_site, "server_agent", self.server_agent)
-        bulk_links = (self.bulk_parent, self.bulk_target, self.retry_of)
+        bulk_links = (self.bulk_parent, self.bulk_target)
         if any(bulk_links):
             if not self.bulk_parent or not self.bulk_target or not self.managed_site:
                 frappe.throw("Bulk child operation linkage is incomplete", frappe.ValidationError)
@@ -166,6 +166,21 @@ class Operation(Document):
                     or previous.state not in {"failed", "timed_out", "needs_intervention", "dead_letter", "rejected"}
                 ):
                     frappe.throw("Bulk child retry lineage is invalid", frappe.ValidationError)
+        elif self.retry_of:
+            from frappe_controller.operation_retry import validate_retry_source
+            from frappe_controller.operation_service import OperationAuthoringError
+
+            if self.is_new() and not self.flags.get("controller_service"):
+                frappe.throw("Retry lineage is service-owned", frappe.PermissionError)
+            source = frappe.get_doc("Operation", self.retry_of)
+            try:
+                validate_retry_source(source, recovery_confirmed=True)
+            except OperationAuthoringError as exc:
+                frappe.throw(str(exc), frappe.ValidationError)
+            if any((self.get(field) or None) != (source.get(field) or None) for field in (
+                "operation_type", "server_agent", "bench", "managed_site", "payload_hash",
+            )):
+                frappe.throw("Retry must preserve the original operation payload and target", frappe.ValidationError)
         if self.required_approvals < 0 or self.approval_count < 0:
             frappe.throw("Approval counts cannot be negative", frappe.ValidationError)
         if self.state in {"queued", "leased"} and self.approval_status not in {"approved", "not_required"}:

@@ -24,6 +24,90 @@ After a site-create operation succeeds, use **Retrieve Administrator Password**
 on its **Operation** record. The credential is delivered separately over signed HTTPS,
 stored in an encrypted Password field, and cleared after the first retrieval.
 
+## Customer site creation
+
+Saved Customers expose **Create → Site** to users with the **Controller Admin**
+or **Operator** role. Select an enabled Server Agent and one of its enabled
+Benches. Development, staging, and production targets are all supported; the
+Agent and Bench must still belong to the same environment. The target's feature
+flags, operation capabilities, domain policy, and approval rules still apply.
+Production operations require a matching Approval Policy; a non-destructive
+development/staging create can proceed without one if no matching policy exists.
+
+This action creates a new site and installs the apps in the Agent's administrator-owned
+Bench `required_apps` policy; it does not restore a template. The selected development
+target uses `frappe`, `erpnext`, and `mos_pro`. It requires `inventory` and `restore_and_reinstall` enabled for
+the target environment, plus the Controller DNS configuration below. Each
+Customer retains one managed-site link. The historical API endpoint
+`create_production_site` and field `controller_production_managed_site` remain
+unchanged for compatibility; the displayed field is now **Managed Site**.
+
+Creation first saves **Site Creation Operation**, a link to the already-created
+Operation. **Managed Site** stays empty until that operation succeeds and Agent
+inventory reports the domain on the expected Agent and Bench. Success additionally
+requires verified required apps, public HTTPS, and acknowledged encrypted credential
+delivery. A once-per-minute
+scheduler job resolves the link, regardless of whether the result or inventory
+arrives first. It scans at most 100 candidates per run using a site-scoped cache
+cursor and wraps after each sweep. Historical jobs without readiness evidence
+cannot permanently occupy the first batch; cache loss safely restarts the scan.
+Duplicate submissions return the same operation; failed or
+intervention-required requests remain visible through **Site Operation** instead
+of silently creating another job. Both Customer fields are service-controlled.
+
+**Check Readiness** runs read-only checks before creation: Agent ready/not draining
+with a heartbeat within 120 seconds; healthy Agent and Bench inventory within 300
+seconds; target, feature, domain and approval policy; required-app policy and version
+evidence; active Cloudflare zone/read access without an existing address/alias record;
+and reachable public IPv4 port 443. Missing evidence blocks creation, including Agents
+that have not yet reported their provisioning policy. Blank-site creation through
+the generic authoring, approval-start and retry APIs enforces the same checks; duplicate
+Customer submissions/retries keep returning the existing operation.
+
+The DNS check does not write a record or prove DNS edit permission. The ingress check
+only proves a listener is reachable, not that a future hostname routes correctly.
+Agent preflight rechecks local routing before effects, and the final public HTTPS
+check gates success. Policy and readiness are rechecked during execution. If the Bench
+required-app policy changes while a job runs, Controller rejects success whose app
+evidence differs from the current policy; review this drift instead of bypassing it.
+Existing completed operation history is unchanged; old success without handover
+evidence does not newly link a Customer.
+
+When a pre-upgrade Agent first delivers an already-completed creation result with
+no `readiness` evidence, Controller acknowledges and preserves its exact result
+and hash, closes the lease, and marks the operation and its targets
+`needs_intervention` with `site_handover_unverified`. The timeline explains that
+manual verification is required. This is not a successful handover and never
+automatically links a Customer or reruns creation. Replayed results remain
+idempotent; conflicting terminal results remain rejected. Explicit but invalid
+readiness evidence still fails the gate, as does a new-format success awaiting
+credential receipt. Do not recreate a legacy site without inspecting its existing
+resources. The handover endpoint reads the required-app policy from the linked
+Bench and fails closed if that policy is missing or mismatched.
+
+## Retrying an operation
+
+The Operation's **Execution Timeline** shows the expected lifecycle steps with
+event-derived status: pending, running, completed, rolled back, stopped, or not
+reached. Expand each step for timestamps and event details; **All events** retains
+the raw chronological history. Stop location follows the last active/failed step,
+not a later cleanup event. Missing step evidence is shown as not reported, never
+assumed successful. Active forms refresh every ten seconds; **Refresh Timeline**
+also reloads the current record. No Agent state is changed by this display.
+
+The requester (Operator) or a Controller Admin can click **Retry** on a finished,
+unsuccessful lifecycle Operation. Queued, leased, running, awaiting-approval, and
+successful operations are not retried. A retry creates a new immutable operation
+with **Retry Of Operation** pointing to its predecessor, fresh command identity,
+and current feature, capability, and approval checks. Duplicate clicks return
+the same successor. Customer site-creation tracking follows that successor.
+
+For `needs_intervention` or `timed_out`, explicitly confirm that the old job has
+stopped and partial changes have been reviewed/recovered. This is not automatic
+cleanup or a resume-from-step feature: the new operation reruns its workflow.
+Creation retries are rejected if the domain already exists in inventory. Bulk
+children and typed data updates must use their dedicated retry/preview workflows.
+
 ## Controller-owned Cloudflare DNS
 
 Cloudflare credentials belong only on the Controller site. Open the single

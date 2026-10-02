@@ -231,12 +231,12 @@
     },
     {
       "fieldname": "job_log_section",
-      "label": "Job Log",
+      "label": "Execution Timeline",
       "fieldtype": "Section Break"
     },
     {
       "fieldname": "job_log",
-      "label": "Job Log",
+      "label": "Execution Timeline",
       "fieldtype": "HTML",
       "read_only": 1
     },

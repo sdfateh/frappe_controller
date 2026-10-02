@@ -4,13 +4,27 @@
     "dt": "Customer",
     "name": "Customer-controller_production_managed_site",
     "fieldname": "controller_production_managed_site",
-    "label": "Production Managed Site",
+    "label": "Managed Site",
     "fieldtype": "Link",
     "options": "Managed Site",
     "insert_after": "customer_name",
     "read_only": 1,
     "no_copy": 1,
     "allow_on_submit": 0,
-    "description": "The production site requested from this customer. It resolves to a Managed Site after provisioning is discovered by inventory."
+    "description": "Linked after the site creation operation succeeds and Agent inventory confirms the site."
+  },
+  {
+    "doctype": "Custom Field",
+    "dt": "Customer",
+    "name": "Customer-controller_site_creation_operation",
+    "fieldname": "controller_site_creation_operation",
+    "label": "Site Creation Operation",
+    "fieldtype": "Link",
+    "options": "Operation",
+    "insert_after": "controller_production_managed_site",
+    "read_only": 1,
+    "no_copy": 1,
+    "allow_on_submit": 0,
+    "description": "Tracks the requested creation while Managed Site is empty. Open this operation to view progress or failures."
   }
 ]

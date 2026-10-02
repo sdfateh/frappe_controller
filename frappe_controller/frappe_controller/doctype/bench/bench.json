@@ -18,6 +18,7 @@
     "frappe_version",
     "erpnext_version",
     "installed_apps_json",
+    "required_apps_json",
     "capabilities_json",
     "health_status",
     "inventory_updated_at"
@@ -75,6 +76,7 @@
       "options": "JSON",
       "default": "[]"
     },
+    {"fieldname": "required_apps_json", "label": "Provisioning Required Apps", "fieldtype": "Code", "options": "JSON", "default": "[]", "read_only": 1, "description": "Administrator-owned Agent bench policy reported by fresh inventory; not a site app selection."},
     {
       "fieldname": "capabilities_json",
       "label": "Capabilities JSON",

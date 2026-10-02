@@ -57,6 +57,10 @@ def store_credential_route(**_request_arguments: Any) -> Response:
         }:
             raise ControllerRequestError("credential_ownership_mismatch", 403)
         if operation.credential_consumed_at:
+            if operation.credential_received_at:
+                # Authenticated owner is retrying a completed handoff after an
+                # acknowledgement was lost. Do not restore the consumed secret.
+                return _response({"accepted": True})
             raise ControllerRequestError("credential_already_consumed", 409)
         if operation.credential_received_at:
             if operation.get_password("administrator_credential", raise_exception=False) != credential:

@@ -102,6 +102,7 @@ class OperationRequest:
     payload: Mapping[str, Any]
     preview_of: str | None = None
     preview_result_hash: str | None = None
+    retry_of: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -127,6 +128,7 @@ class AuthoredOperation:
     target_key: str
     preview_of: str | None
     preview_result_hash: str | None
+    retry_of: str | None = None
 
 
 class OperationAuthoringRepository(Protocol):
@@ -304,6 +306,7 @@ class OperationAuthoringService:
             target_key=hashlib.sha256(target_identity).hexdigest(),
             preview_of=preview_of,
             preview_result_hash=request.preview_result_hash,
+            retry_of=request.retry_of,
         )
         self.repository.create(authored)
         return authored

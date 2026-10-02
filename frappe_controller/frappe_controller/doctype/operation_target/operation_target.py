@@ -26,20 +26,22 @@ class OperationTarget(Document):
         expected = (self.server_agent, self.bench, self.managed_site, self.operation_type_snapshot, self.payload_hash_snapshot)
         if not parent or tuple(parent.get(key) for key in ("server_agent", "bench", "managed_site", "operation_type", "payload_hash")) != expected:
             frappe.throw("Operation Target snapshot differs from its parent", frappe.ValidationError)
-        parent_bulk = (parent.get("bulk_parent"), parent.get("bulk_target"), parent.get("retry_of"))
-        target_bulk = (self.bulk_parent, self.bulk_target, None)
-        if any(parent_bulk) or any(target_bulk) or self.retry_of:
+        parent_bulk = (parent.get("bulk_parent"), parent.get("bulk_target"))
+        target_bulk = (self.bulk_parent, self.bulk_target)
+        if any(parent_bulk) or any(target_bulk):
             if not self.bulk_parent or not self.bulk_target:
                 frappe.throw("Bulk Operation Target linkage is incomplete", frappe.ValidationError)
             if self.bulk_parent != parent.get("bulk_parent") or self.bulk_target != parent.get("bulk_target"):
                 frappe.throw("Operation Target bulk linkage differs from Operation", frappe.ValidationError)
-            previous_operation_target = None
-            if parent.get("retry_of"):
-                previous_operation_target = frappe.db.get_value(
-                    "Operation Target", {"operation": parent.get("retry_of")}, "name"
-                )
-            if self.retry_of != previous_operation_target:
-                frappe.throw("Operation Target retry lineage differs from Operation", frappe.ValidationError)
+        previous_operation_target = None
+        if parent.get("retry_of"):
+            previous_operation_target = frappe.db.get_value(
+                "Operation Target", {"operation": parent.get("retry_of")}, "name"
+            )
+            if not previous_operation_target:
+                frappe.throw("Retry source target is missing", frappe.ValidationError)
+        if self.retry_of != previous_operation_target:
+            frappe.throw("Operation Target retry lineage differs from Operation", frappe.ValidationError)
         immutable_fields(
             self,
             ("operation", "target_key", "server_agent", "bench", "managed_site",

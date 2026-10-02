@@ -13,6 +13,8 @@ from ..frappe_operation_service import FrappeOperationAuthoringRepository
 from ..frappe_store import FrappeCommandStore
 from ..feature_flags import require_operation, target_environment
 from ..lifecycle_authoring import validate_lifecycle_payload
+from ..operation_retry import validate_retry_source
+from ..creation_readiness import check_creation_readiness
 from ..operation_service import (
     OperationAuthoringError,
     OperationAuthoringService,
@@ -71,6 +73,16 @@ def _command_lifetime() -> int:
     return value
 
 
+def _check_blank_creation(operation_type: str, server_agent: str, bench: str, payload: Mapping[str, Any]) -> None:
+    if operation_type != "site.create_blank":
+        return
+    normalized = validate_lifecycle_payload(operation_type, payload).normalized_payload
+    readiness = check_creation_readiness(frappe, domain=normalized["domain"], server_agent=server_agent, bench=bench)
+    if not readiness["ready"]:
+        failures = "; ".join(row["label"] + ": " + row["message"] for row in readiness["checks"] if not row["passed"])
+        frappe.throw("Site creation readiness failed: " + failures, frappe.ValidationError)
+
+
 @frappe.whitelist(methods=["POST"])
 def create_operation(request_json: str) -> Mapping[str, Any]:
     actor = _require_author()
@@ -86,6 +98,9 @@ def create_operation(request_json: str) -> Mapping[str, Any]:
                 request.payload, sort_keys=True, separators=(",", ":")
             ),
         )
+        # Existing immutable authoring requests retain their idempotent response.
+        if not frappe.db.exists("Operation", request.operation_id):
+            _check_blank_creation(request.operation_type, request.server_agent, request.bench, request.payload)
         authored = OperationAuthoringService(
             FrappeOperationAuthoringRepository(frappe), validate_lifecycle_payload
         ).author(request, actor=actor)
@@ -120,7 +135,7 @@ def start_operation(operation_id: str) -> Mapping[str, Any]:
         [
             "requested_by", "approval_status", "required_approvals", "state",
             "server_agent", "operation_type", "payload_json", "bulk_parent",
-            "managed_site",
+            "managed_site", "bench",
         ],
         as_dict=True,
     )
@@ -141,10 +156,71 @@ def start_operation(operation_id: str) -> Mapping[str, Any]:
         return {"operation_id": canonical, "state": "queued"}
     if row.approval_status not in {"approved", "not_required"}:
         frappe.throw("operation approval threshold is not satisfied", frappe.PermissionError)
+    _check_blank_creation(row.operation_type, row.server_agent, row.bench, json.loads(row.payload_json))
     FrappeCommandStore(
         frappe, command_lifetime_seconds=_command_lifetime()
     ).enqueue_approved_operation(canonical, now=datetime.now(UTC))
     return {"operation_id": canonical, "state": "queued"}
 
 
-__all__ = ["create_operation", "start_operation"]
+@frappe.whitelist(methods=["POST"])
+def retry_operation(operation_id: str, recovery_confirmed: Any = False) -> Mapping[str, Any]:
+    """Create one successor with fresh authorization; never reopen an old command."""
+    actor = _require_author()
+    original = frappe.get_doc("Operation", operation_id)
+    original.check_permission("read")
+    if original.requested_by != actor and "Controller Admin" not in frappe.get_roles(actor):
+        frappe.throw("Only the requester or Controller Admin may retry an operation", frappe.PermissionError)
+    # Customer creation/reconciliation locks Customer first. Preserve that order
+    # to avoid deadlocks and retain one tracked creation lineage per Customer.
+    customers = frappe.db.sql(
+        "SELECT name FROM `tabCustomer` WHERE controller_site_creation_operation=%s ORDER BY name FOR UPDATE",
+        (original.name,), as_dict=True,
+    )
+    frappe.db.sql("SELECT name FROM `tabOperation` WHERE name=%s FOR UPDATE", (original.name,))
+    original.reload()
+    try:
+        validate_retry_source(original, recovery_confirmed=recovery_confirmed in (True, 1, "1"))
+        existing = frappe.db.sql(
+            "SELECT name,state FROM `tabOperation` WHERE retry_of=%s AND IFNULL(bulk_parent,'')='' "
+            "ORDER BY creation LIMIT 1 FOR UPDATE", (original.name,), as_dict=True,
+        )
+        if existing:
+            return {"operation_id": existing[0].name, "state": existing[0].state}
+        payload = json.loads(original.payload_json)
+        if original.operation_type in {"site.create", "site.create_blank", "site.create_from_backup"}:
+            if frappe.db.exists("Managed Site", {"domain": payload.get("domain")}):
+                frappe.throw("The site is already in inventory; inspect it instead of recreating it", frappe.ValidationError)
+        require_operation(
+            frappe, environment=target_environment(frappe, original.server_agent, original.managed_site),
+            operation_type=original.operation_type, payload_json=original.payload_json,
+        )
+        _check_blank_creation(original.operation_type, original.server_agent, original.bench, payload)
+        customer_docs = [frappe.get_doc("Customer", row.name) for row in customers]
+        for customer in customer_docs:
+            customer.check_permission("write")
+            if customer.controller_production_managed_site:
+                frappe.throw("Customer already has a Managed Site", frappe.ValidationError)
+        authored = OperationAuthoringService(
+            FrappeOperationAuthoringRepository(frappe), validate_lifecycle_payload,
+        ).author(OperationRequest(
+            operation_id=str(uuid.uuid4()), operation_type=original.operation_type,
+            server_agent=original.server_agent, bench=original.bench,
+            managed_site=original.managed_site, payload=payload, retry_of=original.name,
+        ), actor=actor)
+        from .customer_sites import _set_site_operation
+
+        for customer in customer_docs:
+            _set_site_operation(customer, authored.operation_id)
+        state = authored.state
+        if authored.required_approvals == 0:
+            FrappeCommandStore(frappe, command_lifetime_seconds=_command_lifetime()).enqueue_approved_operation(
+                authored.operation_id, now=datetime.now(UTC),
+            )
+            state = "queued"
+        return {"operation_id": authored.operation_id, "state": state}
+    except OperationAuthoringError as exc:
+        frappe.throw(str(exc), frappe.ValidationError)
+
+
+__all__ = ["create_operation", "start_operation", "retry_operation"]

@@ -115,7 +115,7 @@ class FrappeOperationAuthoringRepository(OperationAuthoringRepository):
                 "operation_id", "idempotency_key", "protocol_version", "server_agent",
                 "bench", "managed_site", "operation_type", "payload_json", "payload_hash",
                 "requested_by", "approval_policy", "required_approvals",
-                "preview_of", "preview_result_hash",
+                "preview_of", "preview_result_hash", "retry_of",
             ],
             as_dict=True,
         )
@@ -126,7 +126,7 @@ class FrappeOperationAuthoringRepository(OperationAuthoringRepository):
             "operation_id", "idempotency_key", "protocol_version", "server_agent", "bench",
             "managed_site", "operation_type", "payload_json", "payload_hash", "requested_by",
             "approval_policy", "required_approvals",
-            "preview_of", "preview_result_hash",
+            "preview_of", "preview_result_hash", "retry_of",
         ):
             if row.get(field) != expected[field]:
                 raise OperationAuthoringError("operation id is already bound to different data")
@@ -134,7 +134,7 @@ class FrappeOperationAuthoringRepository(OperationAuthoringRepository):
             "Operation Target", {"operation": operation.operation_id},
             [
                 "target_key", "server_agent", "bench", "managed_site", "site_domain_snapshot",
-                "operation_type_snapshot", "payload_hash_snapshot", "inventory_revision_snapshot",
+                "operation_type_snapshot", "payload_hash_snapshot", "inventory_revision_snapshot", "retry_of",
             ],
             as_dict=True,
         )
@@ -142,10 +142,11 @@ class FrappeOperationAuthoringRepository(OperationAuthoringRepository):
             operation.target_key, operation.server_agent, operation.bench,
             operation.managed_site, operation.site_domain, operation.operation_type,
             operation.payload_hash, operation.inventory_revision,
+            self.db.get_value("Operation Target", {"operation": operation.retry_of}, "name") if operation.retry_of else None,
         )
         if not target or tuple(target.get(field) for field in (
             "target_key", "server_agent", "bench", "managed_site", "site_domain_snapshot",
-            "operation_type_snapshot", "payload_hash_snapshot", "inventory_revision_snapshot",
+            "operation_type_snapshot", "payload_hash_snapshot", "inventory_revision_snapshot", "retry_of",
         )) != expected_target:
             raise OperationAuthoringError("operation target is already bound to different data")
         return True
@@ -174,7 +175,11 @@ class FrappeOperationAuthoringRepository(OperationAuthoringRepository):
             "state": operation.state,
             "preview_of": operation.preview_of,
             "preview_result_hash": operation.preview_result_hash,
-        }).insert(ignore_permissions=True)
+            "retry_of": operation.retry_of,
+        })
+        if operation.retry_of:
+            operation_doc.flags.controller_service = True
+        operation_doc.insert(ignore_permissions=True)
         self.frappe.get_doc({
             "doctype": "Operation Target",
             "operation": operation_doc.name,
@@ -188,6 +193,7 @@ class FrappeOperationAuthoringRepository(OperationAuthoringRepository):
             "inventory_revision_snapshot": operation.inventory_revision,
             "state": operation.state,
             "attempt": 0,
+            "retry_of": self.db.get_value("Operation Target", {"operation": operation.retry_of}, "name") if operation.retry_of else None,
         }).insert(ignore_permissions=True)
         return operation_doc
 
