@@ -157,12 +157,18 @@ def _client(settings: ControllerSettings):
     secret_key = settings.aws_secret_access_key
     if bool(access_key) != bool(secret_key):
         raise ControllerRequestError("controller_aws_credentials_incomplete", 503)
+    config_options: dict[str, Any] = {
+        "retries": {"max_attempts": 3, "mode": "standard"},
+    }
+    # Frappe v15 can require botocore 1.34, which predates this Config option.
+    # Older SDKs still validate supported response checksums when callers pass
+    # ChecksumMode="ENABLED" (as every object read below does). Do not catch and
+    # suppress arbitrary Config errors or disable checksum validation.
+    if "response_checksum_validation" in Config.OPTION_DEFAULTS:
+        config_options["response_checksum_validation"] = "when_supported"
     options: dict[str, Any] = {
         "region_name": settings.aws_region,
-        "config": Config(
-            response_checksum_validation="when_supported",
-            retries={"max_attempts": 3, "mode": "standard"},
-        ),
+        "config": Config(**config_options),
     }
     if access_key:
         options.update(
