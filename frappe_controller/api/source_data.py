@@ -11,6 +11,7 @@ from uuid import UUID, uuid4
 
 import frappe
 
+from ..compat import CONTROLLER_ROLES, SOURCE_DATA_ROLE
 from ..feature_flags import runtime_feature_config
 from ..source_data import (
     API_ORIGIN, CATALOGS, MAX_ADD_ROWS, RECORD_RESOURCES, SourceDataError,
@@ -20,8 +21,8 @@ from ..source_data import (
 )
 
 
-READ_ROLES = frozenset({"System Manager", "Controller Admin", "Operator", "Approver", "Auditor"})
-WRITE_ROLES = frozenset({"System Manager", "Controller Admin"})
+READ_ROLES = CONTROLLER_ROLES | {SOURCE_DATA_ROLE}
+WRITE_ROLES = frozenset({"System Manager", "Controller Admin", SOURCE_DATA_ROLE})
 
 
 def _actor(roles):
@@ -110,6 +111,7 @@ def browse(resource="brands", filters=None, start=0, page_length=50, source=None
     request["total"] = cached.get("total")
     result = result_page(request, cached["records"], cached["fetched_at"])
     result["can_write"] = bool(WRITE_ROLES.intersection(frappe.get_roles(user)))
+    result["can_manage_settings"] = bool(frappe.has_permission("Frappe Controller Settings", ptype="write"))
     result["can_add_vehicles"] = result["can_write"]
     result["catalogs"] = CATALOGS
     result["snapshots"] = {str(row["id"]): snapshot(row) for row in result["items"] if type(row.get("id")) is int and row["id"] > 0} if resource in RECORD_RESOURCES else {}

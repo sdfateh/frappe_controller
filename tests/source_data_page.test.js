@@ -22,7 +22,7 @@ function element(value = "") {
   return {value, val(value) {if (!arguments.length) return this.value; this.value = value; return this;}, text(value) {this.value = value; return this;},
     removeClass() {return this;}, addClass() {return this;}, prop() {return this;},
     empty() {return this;}, hide() {return this;}, show() {return this;}, appendTo() {return this;},
-    on() {return this;}, remove() {return this;}, append() {return this;}, attr() {return this;}, toggle() {return this;}};
+    on() {return this;}, remove() {return this;}, append() {return this;}, attr() {return this;}, toggle(value) {this.visible = Boolean(value); return this;}};
 }
 function browser() {
   const instance = Object.create(Browser.prototype);
@@ -35,6 +35,15 @@ function browser() {
 }
 
 (async () => {
+  const catalogManager = browser();
+  Object.assign(catalogManager, {canAdd: true, result: {can_write: true, can_manage_settings: false},
+    addSingle: element(), addBulk: element(), settingsLink: element()});
+  catalogManager.updateAddActions();
+  assert.equal(catalogManager.addSingle.visible, true);
+  assert.equal(catalogManager.settingsLink.visible, false, "Catalog management does not expose Controller settings");
+  catalogManager.result.can_manage_settings = true;
+  catalogManager.updateAddActions();
+  assert.equal(catalogManager.settingsLink.visible, true);
   const editSchema = {fields: {name: {type: "string"}, width: {type: "number", nullable: true}, optional: {type: "string", nullable: true}}};
   const originalEdit = {name: "Same", width: "215.0", optional: null};
   assert.equal(JSON.stringify(Browser.editChanges(originalEdit, {name: "Same", width: "215.000", optional: ""}, editSchema)), "{}");

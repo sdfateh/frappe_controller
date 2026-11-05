@@ -4,5 +4,9 @@
   "module": "Frappe Controller",
   "title": "Site Actions",
   "icon": "settings",
-  "standard": "Yes"
+  "standard": "Yes",
+  "roles": [
+    {"role": "Controller Admin"},
+    {"role": "Operator"}
+  ]
 }

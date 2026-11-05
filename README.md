@@ -106,7 +106,16 @@ segments use exact-match `/vehicle/get/list` query filters for dependent lookups
 These lookups deduplicate model/year suggestions and fail visibly if the complete
 result exceeds 10,000 records, 2 MB of decoded JSON or the 20-second read budget.
 
-**Controller Admin** and **System Manager** users can add a single record or bulk
+For catalog-only staff, assign **Source Data Manager** to a **System User** without
+any Controller roles. Their app entry opens Source Data directly; the Controller
+sidebar exposes only the catalog. They can browse, add, edit and delete single or
+bulk records through the same validated and audited API. They cannot access
+Controller settings, fleet records, operations, approvals or reports. The settings
+shortcut is governed separately by write permission on Controller Settings.
+Roles are additive: any other roles assigned to the user keep their own access.
+The Controller deployment feature gate still applies to catalog access.
+
+**Source Data Manager**, **Controller Admin** and **System Manager** users can add a single record or bulk
 add up to 100 rows using the grid or a UTF-8 CSV (64 KB maximum). Each catalog's
 form and CSV template use its required and optional fields. Vehicle specifications
 are supported; colors require English and Arabic names; tire dimensions enforce

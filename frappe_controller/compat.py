@@ -2,6 +2,9 @@
 
 from typing import Any
 
+CONTROLLER_ROLES = frozenset({"System Manager", "Controller Admin", "Operator", "Approver", "Auditor"})
+SOURCE_DATA_ROLE = "Source Data Manager"
+
 
 def desk_route(path: str) -> str:
     return "/desk/" + path.lstrip("/")
@@ -19,5 +22,5 @@ def has_app_permission() -> bool:
     actor = getattr(getattr(frappe, "session", None), "user", None)
     if not actor or actor == "Guest":
         return False
-    roles = {"System Manager", "Controller Admin", "Operator", "Approver", "Auditor"}
+    roles = CONTROLLER_ROLES | {SOURCE_DATA_ROLE}
     return bool(roles.intersection(frappe.get_roles(actor)) and runtime_feature_config(frappe).workspace_visible)

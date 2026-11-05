@@ -4,7 +4,7 @@ app_publisher = "Frappe Controller maintainers"
 app_description = "Central control plane for allowlisted Frappe server agents"
 app_email = "security@example.invalid"
 app_license = "MIT"
-from frappe_controller.compat import desk_route
+from frappe_controller.compat import SOURCE_DATA_ROLE, desk_route
 
 app_logo_url = "/assets/frappe_controller/images/controller.svg"
 add_to_apps_screen = [{
@@ -60,10 +60,10 @@ scheduler_events = {
 
 
 def ensure_controller_roles():
-    """Idempotently install the four least-privilege controller roles."""
+    """Install Controller roles and the independently assignable catalog role."""
     import frappe
 
-    for role_name in _CONTROLLER_ROLES:
+    for role_name in (*_CONTROLLER_ROLES, SOURCE_DATA_ROLE):
         if not frappe.db.exists("Role", role_name):
             frappe.get_doc(
                 {

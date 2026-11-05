@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from types import MappingProxyType
 from typing import Any, Mapping
-from .compat import in_test
+from .compat import CONTROLLER_ROLES, SOURCE_DATA_ROLE, desk_route, in_test
 
 
 SCHEMA_VERSION = 1
@@ -311,10 +311,19 @@ def extend_bootinfo(bootinfo: Any) -> None:
 
     actor = getattr(getattr(frappe, "session", None), "user", None)
     roles = set(frappe.get_roles(actor)) if actor and actor != "Guest" else set()
-    if not ({"System Manager", "Controller Admin", "Operator", "Approver", "Auditor"} & roles):
+    if not (CONTROLLER_ROLES & roles):
         value = FeatureConfig.disabled().public_value()
     else:
         value = runtime_feature_config(frappe).public_value()
+    # Catalog access does not enable Controller operations or its workspace.
+    if SOURCE_DATA_ROLE in roles and not CONTROLLER_ROLES.intersection(roles):
+        visible = runtime_feature_config(frappe).workspace_visible
+        apps = bootinfo.get("app_data", []) if isinstance(bootinfo, dict) else getattr(bootinfo, "app_data", [])
+        for app in apps:
+            if app.get("app_name") == "frappe_controller":
+                app["app_title"] = "Source Data"
+                app["app_route"] = desk_route("frappe-controller/source-data") if visible else ""
+                app["on_apps_screen"] = bool(visible)
     if isinstance(bootinfo, dict):
         bootinfo["frappe_controller_features"] = value
     else:

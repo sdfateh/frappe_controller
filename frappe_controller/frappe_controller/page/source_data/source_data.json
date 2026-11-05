@@ -6,6 +6,7 @@
   "icon": "database",
   "standard": "Yes",
   "roles": [
+    {"role": "Source Data Manager"},
     {"role": "System Manager"},
     {"role": "Controller Admin"},
     {"role": "Operator"},

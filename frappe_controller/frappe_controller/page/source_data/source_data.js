@@ -444,7 +444,7 @@ frappe.pages["source-data"].Browser = class SourceDataBrowser {
     if (this.selectionBar) this.selectionBar.toggle(Boolean(this.canAdd && this.category !== "vehicles" && this.selected.size));
     if (this.selectionCount) this.selectionCount.text(__("{0} selected on this page", [this.selected.size]));
     if (this.manageRecords) this.manageRecords.toggle(this.category === "vehicles");
-    if (this.settingsLink) this.settingsLink.toggle(Boolean(this.canAdd));
+    if (this.settingsLink) this.settingsLink.toggle(Boolean(this.result?.can_manage_settings));
   }
 
   catalogResource() { return ["vehicles", "vehicle_records"].includes(this.category) ? "vehicles" : this.category; }
