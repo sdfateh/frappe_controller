@@ -126,7 +126,7 @@ class BulkOperationTarget(Document):
             frappe.throw("Bulk preview lineage is not supported for this operation", frappe.ValidationError)
 
         preview = frappe.db.get_value(
-            "Operation",
+            "Controller Operation",
             self.preview_operation,
             [
                 "operation_type", "server_agent", "bench", "managed_site",
@@ -177,7 +177,7 @@ class BulkOperationTarget(Document):
                 frappe.DuplicateEntryError,
             )
         if self.preview_operation and frappe.db.exists(
-            "Operation",
+            "Controller Operation",
             {
                 "preview_of": self.preview_operation,
                 "name": ["!=", self.child_operation or ""],
@@ -278,7 +278,7 @@ class BulkOperationTarget(Document):
 
         if self.child_operation:
             child = frappe.db.get_value(
-                "Operation",
+                "Controller Operation",
                 self.child_operation,
                 ["bulk_parent", "bulk_target", "retry_of", "server_agent", "bench", "managed_site"],
                 as_dict=True,
@@ -301,7 +301,7 @@ class BulkOperationTarget(Document):
                 frappe.throw("Bulk target child operation linkage is invalid", frappe.ValidationError)
         if self.cancellation_operation:
             cancellation = frappe.db.get_value(
-                "Operation", self.cancellation_operation,
+                "Controller Operation", self.cancellation_operation,
                 [
                     "operation_type", "server_agent", "bench", "managed_site",
                     "requested_by", "payload_json",

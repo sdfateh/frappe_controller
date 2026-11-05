@@ -9,7 +9,7 @@
     {"fieldname": "bench", "fieldtype": "Link", "label": "Bench", "options": "Bench", "width": 135},
     {"fieldname": "state", "fieldtype": "Data", "label": "Failure State", "width": 150},
     {"fieldname": "error_code", "fieldtype": "Data", "label": "Error Code", "width": 190},
-    {"fieldname": "child_operation", "fieldtype": "Link", "label": "Child Operation", "options": "Operation", "width": 280},
+    {"fieldname": "child_operation", "fieldtype": "Link", "label": "Child Operation", "options": "Controller Operation", "width": 280},
     {"fieldname": "completed_at", "fieldtype": "Datetime", "label": "Completed", "width": 170}
   ],
   "disabled": 0,

@@ -37,7 +37,7 @@ _READ_ROLES = frozenset({"Controller Admin", "Operator", "Approver", "Auditor"})
 
 def _require_bulk_previews(preview_ids: tuple[str, ...]) -> None:
     rows = frappe.get_all(
-        "Operation",
+        "Controller Operation",
         filters={"name": ["in", list(preview_ids)]},
         fields=["name", "server_agent", "managed_site"],
         limit_page_length=1001,

@@ -163,7 +163,7 @@ class IngestionGateTests(unittest.TestCase):
                     repository = FrappeIngestionRepository(frappe)
                     repository._operation_row = Mock(return_value=row)
                     def write(doctype, name, values, **kwargs):
-                        if doctype == "Operation":
+                        if doctype == "Controller Operation":
                             row.update(values)
                     frappe.db.set_value.side_effect = write
                     service = ControllerIngestionService(repository)

@@ -1,0 +1,19 @@
+--- a/apps/whitelabel/whitelabel/api.py
++++ b/apps/whitelabel/whitelabel/api.py
+@@ -41,10 +41,12 @@
+ 	onboard_steps_details = frappe.get_all("Onboarding Step",filters={},fields=["name"])
+ 	for row in onboard_steps_details:
+ 		doc = frappe.get_doc("Onboarding Step",row.name)
+-		doc.intro_video_url = ""
+-		doc.description = ""
+-		doc.flags.ignore_mandatory = True
+-		doc.save(ignore_permissions = True)
++		# Only update presentation fields: old steps can reference retired DocTypes.
++		# Resaving the whole document would validate those unrelated stale links.
++		updates = {"intro_video_url": "", "description": ""}
++		if doc.action == "Watch Video":
++			updates.update(action="View Docs", path=doc.path or doc.video_url)
++		frappe.db.set_value("Onboarding Step", row.name, updates)
+ 
+ def boot_session(bootinfo):
+ 	"""boot session - send website info if guest"""

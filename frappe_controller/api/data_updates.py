@@ -158,7 +158,7 @@ def promote_data_update(preview_operation_id: str, operation_id: str) -> Mapping
     if preview_uuid != preview_operation_id.lower() or actual_uuid != operation_id.lower():
         frappe.throw("operation ids must be canonical", frappe.ValidationError)
     preview = frappe.db.get_value(
-        "Operation", preview_uuid,
+        "Controller Operation", preview_uuid,
         [
             "operation_id", "operation_type", "server_agent", "bench", "managed_site",
             "requested_by", "state", "payload_json", "result_json", "result_hash",

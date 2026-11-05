@@ -75,7 +75,7 @@ class ApprovalBoundDispatcher:
                 "a.inventory_digest AS current_inventory_revision, "
                 "a.drain_requested AS agent_draining, "
                 "b.bench_id, s.site_id, s.domain AS site_domain "
-                "FROM `tabOperation` o JOIN `tabServer Agent` a ON a.name=o.server_agent "
+                "FROM `tabController Operation` o JOIN `tabServer Agent` a ON a.name=o.server_agent "
                 "JOIN `tabBench` b ON b.name=o.bench LEFT JOIN `tabManaged Site` s ON s.name=o.managed_site "
                 f"WHERE o.name=%s{suffix}",
                 (operation_name,),
@@ -301,7 +301,7 @@ class ApprovalBoundDispatcher:
         if operation["state"] != "awaiting_approval" or existing_digest is not None:
             raise DispatchConflict("operation is not dispatchable")
         self.db.set_value(
-            "Operation",
+            "Controller Operation",
             operation_name,
             {"state": "queued", "command_json": canonical_json(envelope), "command_hash": digest},
             update_modified=False,

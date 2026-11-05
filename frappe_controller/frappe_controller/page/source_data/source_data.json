@@ -1,0 +1,15 @@
+{
+  "doctype": "Page",
+  "name": "source-data",
+  "module": "Frappe Controller",
+  "title": "Source Data",
+  "icon": "database",
+  "standard": "Yes",
+  "roles": [
+    {"role": "System Manager"},
+    {"role": "Controller Admin"},
+    {"role": "Operator"},
+    {"role": "Approver"},
+    {"role": "Auditor"}
+  ]
+}

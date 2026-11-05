@@ -7,9 +7,15 @@ from urllib.parse import urlsplit
 import frappe
 from frappe.model.document import Document
 
+from frappe_controller.source_data import SourceDataError, normalize_api_url
+
 
 class FrappeControllerSettings(Document):
     def validate(self):
+        try:
+            self.source_data_api_url = normalize_api_url(self.get("source_data_api_url") or "")
+        except SourceDataError as error:
+            frappe.throw(str(error), frappe.ValidationError)
         public_url = (self.public_controller_url or "").strip().rstrip("/")
         if public_url:
             parsed = urlsplit(public_url)

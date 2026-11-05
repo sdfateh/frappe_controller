@@ -1,7 +1,9 @@
 {
   "charts": [],
-  "content": "[{\"id\":\"controller-title\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Frappe Controller</span>\",\"col\":12}},{\"id\":\"fleet-card\",\"type\":\"card\",\"data\":{\"card_name\":\"Fleet Inventory\",\"col\":4}},{\"id\":\"operations-card\",\"type\":\"card\",\"data\":{\"card_name\":\"Operations and Failures\",\"col\":4}},{\"id\":\"bulk-card\",\"type\":\"card\",\"data\":{\"card_name\":\"Bulk Operations\",\"col\":4}}]",
+  "content": "[{\"id\":\"controller-title\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Frappe Controller</span>\",\"col\":12}},{\"id\":\"fleet-card\",\"type\":\"card\",\"data\":{\"card_name\":\"Fleet Inventory\",\"col\":4}},{\"id\":\"operations-card\",\"type\":\"card\",\"data\":{\"card_name\":\"Operations and Failures\",\"col\":4}},{\"id\":\"bulk-card\",\"type\":\"card\",\"data\":{\"card_name\":\"Bulk Operations\",\"col\":4}},{\"id\":\"source-data-card\",\"type\":\"card\",\"data\":{\"card_name\":\"Source Data\",\"col\":4}}]",
   "doctype": "Workspace",
+  "type": "Workspace",
+  "standard": 1,
   "for_user": "",
   "hide_custom": 1,
   "icon": "server",
@@ -16,14 +18,16 @@
     {"hidden": 0, "is_query_report": 0, "label": "Operations and Failures", "link_count": 5, "onboard": 0, "type": "Card Break"},
     {"hidden": 0, "label": "Site Actions", "link_to": "site-actions", "link_type": "Page", "onboard": 0, "type": "Link"},
     {"hidden": 0, "label": "Operation Types", "link_to": "Operation Type", "link_type": "DocType", "onboard": 0, "type": "Link"},
-    {"hidden": 0, "label": "Operations", "link_to": "Operation", "link_type": "DocType", "onboard": 0, "type": "Link"},
+    {"hidden": 0, "label": "Operations", "link_to": "Controller Operation", "link_type": "DocType", "onboard": 0, "type": "Link"},
     {"hidden": 0, "is_query_report": 1, "label": "Agent Operations", "link_to": "Agent Operations", "link_type": "Report", "onboard": 0, "type": "Link"},
     {"hidden": 0, "is_query_report": 1, "label": "Operation Failures", "link_to": "Operation Failures", "link_type": "Report", "onboard": 0, "type": "Link"},
     {"hidden": 0, "is_query_report": 0, "label": "Bulk Operations", "link_count": 4, "onboard": 0, "type": "Card Break"},
     {"hidden": 0, "label": "Bulk Operations", "link_to": "Bulk Operation", "link_type": "DocType", "onboard": 0, "type": "Link"},
     {"hidden": 0, "label": "Bulk Targets", "link_to": "Bulk Operation Target", "link_type": "DocType", "onboard": 0, "type": "Link"},
     {"hidden": 0, "is_query_report": 0, "label": "Bulk Progress", "link_to": "Bulk Progress", "link_type": "Report", "onboard": 0, "type": "Link"},
-    {"hidden": 0, "is_query_report": 1, "label": "Bulk Failures", "link_to": "Bulk Failures", "link_type": "Report", "onboard": 0, "type": "Link"}
+    {"hidden": 0, "is_query_report": 1, "label": "Bulk Failures", "link_to": "Bulk Failures", "link_type": "Report", "onboard": 0, "type": "Link"},
+    {"hidden": 0, "is_query_report": 0, "label": "Source Data", "link_count": 1, "onboard": 0, "type": "Card Break"},
+    {"hidden": 0, "label": "Browse Source Data", "link_to": "source-data", "link_type": "Page", "onboard": 0, "type": "Link"}
   ],
   "module": "Frappe Controller",
   "name": "Frappe Controller",
@@ -42,7 +46,8 @@
     {"color": "Cyan", "doc_view": "List", "label": "Benches", "link_to": "Bench", "type": "DocType"},
     {"color": "Green", "doc_view": "List", "label": "Sites", "link_to": "Managed Site", "type": "DocType"},
     {"color": "Blue", "label": "Site Actions", "link_to": "site-actions", "type": "Page"},
-    {"color": "Orange", "doc_view": "List", "label": "Settings", "link_to": "Frappe Controller Settings", "type": "DocType"}
+    {"color": "Orange", "doc_view": "List", "label": "Settings", "link_to": "Frappe Controller Settings", "type": "DocType"},
+    {"color": "Cyan", "label": "Source Data", "link_to": "source-data", "type": "Page"}
   ],
   "title": "Frappe Controller"
 }

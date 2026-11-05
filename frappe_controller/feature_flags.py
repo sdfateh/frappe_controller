@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from types import MappingProxyType
 from typing import Any, Mapping
+from .compat import in_test
 
 
 SCHEMA_VERSION = 1
@@ -171,9 +172,8 @@ def runtime_feature_config(frappe_module: Any | None = None) -> FeatureConfig:
     if frappe_module is None:
         import frappe as frappe_module
     try:
-        in_test = bool(getattr(getattr(frappe_module, "flags", None), "in_test", False))
         return load_feature_config(
-            feature_config_path(frappe_module), require_root_owner=not in_test
+            feature_config_path(frappe_module), require_root_owner=not in_test(frappe_module)
         )
     except FeatureConfigError:
         return FeatureConfig.disabled()
@@ -365,6 +365,7 @@ def sync_workspace_visibility(frappe_module: Any | None = None) -> dict[str, boo
         "Fleet Inventory": inventory_visible,
         "Operations and Failures": operations_visible,
         "Bulk Operations": bulk_visible,
+        "Source Data": config.workspace_visible,
     }
     link_group = {
         "Fleet Inventory": "Fleet Inventory",
@@ -382,6 +383,8 @@ def sync_workspace_visibility(frappe_module: Any | None = None) -> dict[str, boo
         "Bulk Targets": "Bulk Operations",
         "Bulk Progress": "Bulk Operations",
         "Bulk Failures": "Bulk Operations",
+        "Source Data": "Source Data",
+        "Browse Source Data": "Source Data",
     }
     workspace = frappe_module.get_doc("Workspace", "Frappe Controller")
     workspace.is_hidden = 0 if config.workspace_visible else 1

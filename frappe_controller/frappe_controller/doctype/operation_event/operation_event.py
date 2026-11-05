@@ -24,7 +24,7 @@ class OperationEvent(Document):
             require_json(self.details_json, "details_json")
         require_sha256(self.body_hash, "body_hash")
         operation = frappe.db.get_value(
-            "Operation", self.operation, ["operation_id", "last_event_sequence"], as_dict=True
+            "Controller Operation", self.operation, ["operation_id", "last_event_sequence"], as_dict=True
         )
         if not operation or operation.operation_id != self.operation_id:
             frappe.throw("Event operation identity does not match", frappe.ValidationError)
@@ -43,7 +43,7 @@ class OperationEvent(Document):
         immutable_fields(self, _EVENT_FIELDS)
 
     def after_insert(self):
-        frappe.db.set_value("Operation", self.operation, "last_event_sequence", self.sequence, update_modified=False)
+        frappe.db.set_value("Controller Operation", self.operation, "last_event_sequence", self.sequence, update_modified=False)
 
     def on_trash(self):
         prevent_delete("Operation Event")

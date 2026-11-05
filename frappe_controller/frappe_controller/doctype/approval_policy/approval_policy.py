@@ -17,7 +17,7 @@ class ApprovalPolicy(Document):
             frappe.throw("Approval policies require at least one approval", frappe.ValidationError)
         if self.bulk_threshold < 1 or self.maximum_targets < self.bulk_threshold:
             frappe.throw("Approval policy target limits are invalid", frappe.ValidationError)
-        if self.get_doc_before_save() and frappe.db.exists("Operation", {"approval_policy": self.name}):
+        if self.get_doc_before_save() and frappe.db.exists("Controller Operation", {"approval_policy": self.name}):
             immutable_fields(self, _POLICY_FIELDS)
 
     def on_trash(self):

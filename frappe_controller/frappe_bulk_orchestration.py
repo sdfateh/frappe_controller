@@ -148,7 +148,7 @@ class FrappeBulkRepository:
     def inflight_counts(self) -> InflightCounts:
         rows = self.db.sql(
             "SELECT a.agent_id, b.bench_id, COUNT(*) AS count "
-            "FROM `tabOperation` o JOIN `tabServer Agent` a ON a.name=o.server_agent "
+            "FROM `tabController Operation` o JOIN `tabServer Agent` a ON a.name=o.server_agent "
             "JOIN `tabBench` b ON b.name=o.bench "
             "WHERE o.state IN ('queued','leased','running') "
             "GROUP BY a.agent_id, b.bench_id",
@@ -238,7 +238,7 @@ class FrappeBulkRepository:
                 "Operation Target", {"operation": previous_child}, "name"
             )
         operation = self.frappe.get_doc({
-            "doctype": "Operation",
+            "doctype": "Controller Operation",
             "operation_id": child_operation_id,
             "idempotency_key": idempotency_key,
             "protocol_version": "1.0",
@@ -325,7 +325,7 @@ class FrappeBulkRepository:
         ):
             raise BulkOrchestrationError("bulk cancellation target inventory is unavailable")
         operation = self.frappe.get_doc({
-            "doctype": "Operation",
+            "doctype": "Controller Operation",
             "operation_id": cancellation_id,
             "idempotency_key": f"controller:bulk-cancel:{cancellation_id}",
             "protocol_version": "1.0",

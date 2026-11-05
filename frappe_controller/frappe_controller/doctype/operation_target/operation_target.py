@@ -4,7 +4,7 @@ from frappe.model.document import Document
 from frappe_controller.frappe_controller.doctype._invariants import (
     immutable_fields, legal_transition, prevent_delete, require_link_value, require_sha256,
 )
-from frappe_controller.frappe_controller.doctype.operation.operation import _TRANSITIONS
+from frappe_controller.frappe_controller.doctype.controller_operation.controller_operation import _TRANSITIONS
 
 
 class OperationTarget(Document):
@@ -16,7 +16,7 @@ class OperationTarget(Document):
         if self.managed_site:
             require_link_value("Managed Site", self.managed_site, "bench", self.bench)
         parent = frappe.db.get_value(
-            "Operation", self.operation,
+            "Controller Operation", self.operation,
             [
                 "server_agent", "bench", "managed_site", "operation_type", "payload_hash",
                 "bulk_parent", "bulk_target", "retry_of",

@@ -49,5 +49,5 @@
   if (frappe.router && frappe.router.on) {
     frappe.router.on("change", guardHiddenWorkspace);
   }
-  frappe.ready(guardHiddenWorkspace);
+  $(guardHiddenWorkspace);
 })();

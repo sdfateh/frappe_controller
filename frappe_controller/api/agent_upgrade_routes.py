@@ -57,7 +57,7 @@ def _authenticate(agent_id: str) -> None:
 
 def _counts(name: str) -> dict[str, int]:
     return {
-        state: int(frappe.db.count("Operation", {"server_agent": name, "state": state}))
+        state: int(frappe.db.count("Controller Operation", {"server_agent": name, "state": state}))
         for state in ("queued", "leased", "running")
     }
 

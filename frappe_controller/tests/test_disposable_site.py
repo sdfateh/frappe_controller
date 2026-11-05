@@ -3,13 +3,20 @@
 from __future__ import annotations
 
 import hashlib
+import base64
 import json
+import time
 import uuid
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from unittest.mock import patch
+
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+from werkzeug.wrappers import Request
 
 import frappe
-from frappe.tests.utils import FrappeTestCase
+from frappe.tests import IntegrationTestCase
 
 from frappe_controller.frappe_repository import (
     FrappeIngestionRepository,
@@ -32,7 +39,7 @@ from frappe_controller.ingestion import ControllerIngestionService
 from frappe_controller.inventory import InventoryReconciliationService
 
 
-class TestDisposableControllerSite(FrappeTestCase):
+class TestDisposableControllerSite(IntegrationTestCase):
     @staticmethod
     def _insert_agent(agent_id: str):
         return frappe.get_doc(
@@ -160,7 +167,7 @@ class TestDisposableControllerSite(FrappeTestCase):
         payload_hash = hashlib.sha256(payload_json.encode()).hexdigest()
         operation = frappe.get_doc(
             {
-                "doctype": "Operation",
+                "doctype": "Controller Operation",
                 "operation_id": operation_id,
                 "idempotency_key": f"controller:{operation_id}",
                 "protocol_version": "1.0",
@@ -198,7 +205,7 @@ class TestDisposableControllerSite(FrappeTestCase):
             "Agent Certificate",
             "Bench",
             "Managed Site",
-            "Operation",
+            "Controller Operation",
             "Operation Target",
             "Operation Event",
             "Approval Policy",
@@ -209,13 +216,75 @@ class TestDisposableControllerSite(FrappeTestCase):
         ):
             self.assertTrue(frappe.db.exists("DocType", doctype), doctype)
             table = f"tab{doctype}"
-            self.assertTrue(frappe.db.table_exists(table), table)
-        operation_columns = set(frappe.db.get_table_columns("Operation"))
+            self.assertTrue(frappe.db.table_exists(doctype), table)
+        operation_columns = set(frappe.db.get_table_columns("Controller Operation"))
         target_columns = set(frappe.db.get_table_columns("Operation Target"))
         self.assertTrue({"bulk_parent", "bulk_target", "retry_of"} <= operation_columns)
         self.assertTrue({"bulk_parent", "bulk_target", "retry_of"} <= target_columns)
+        self.assertIn("setup_required_apps_json", frappe.db.get_table_columns("Server Agent"))
         for role in ("Controller Admin", "Operator", "Approver", "Auditor"):
             self.assertTrue(frappe.db.exists("Role", role), role)
+
+    def test_signed_installation_status_is_read_only_scoped_and_replay_protected(self) -> None:
+        from frappe_controller.api import enrollment_routes
+        from frappe_controller.frappe_security_store import FrappeCertificateStore
+
+        suffix = uuid.uuid4().hex[:10]
+        agent_id, bench_id = f"setup-agent-{suffix}", f"setup-bench-{suffix}"
+        agent = self._insert_agent(agent_id)
+        agent.allowed_site_suffixes_json = '["example.invalid"]'
+        agent.allowed_operations_json = '["site.verify"]'
+        agent.setup_required_apps_json = '["frappe"]'
+        agent.save(ignore_permissions=True)
+        self._insert_bench(agent_id, bench_id)
+        key = Ed25519PrivateKey.generate()
+        now = datetime.now(UTC).replace(tzinfo=None)
+        frappe.db.set_value("Server Agent", agent_id, {
+            "signing_public_key_ed25519": key.public_key().public_bytes(serialization.Encoding.Raw, serialization.PublicFormat.Raw).hex(),
+            "last_signed_request_at_ns": "0", "status": "Online", "reported_status": "ready",
+            "last_seen": now, "inventory_updated_at": now, "inventory_digest": "a" * 64,
+        })
+        frappe.db.set_value("Bench", bench_id, {"health_status": "healthy", "inventory_updated_at": now,
+            "required_apps_json": '["frappe"]', "installed_apps_json": '[["frappe","15"]]'})
+        settings = frappe.get_single("Frappe Controller Settings")
+        old_url, old_image = settings.public_controller_url, settings.agent_image_reference
+        settings.public_controller_url = "https://controller.example.invalid"
+        settings.agent_image_reference = "registry.example.invalid/agent@sha256:" + "a" * 64
+        settings.save(ignore_permissions=True)
+        store = FrappeCertificateStore(token_pepper=b"test-only-installation-pepper-32-bytes", frappe_module=frappe)
+        original_request = getattr(frappe.local, "request", None)
+
+        def request(*, body_agent=agent_id, signed=True):
+            body = json.dumps({"agent_id": body_agent, "bench_id": bench_id}, separators=(",", ":")).encode()
+            headers = {}
+            if signed:
+                sequence = str(time.time_ns())
+                canonical = f"frappe-agent-v1\n{agent_id}\nsetup:status\n{sequence}\n{hashlib.sha256(body).hexdigest()}".encode()
+                headers = {"X-Frappe-Agent-ID": agent_id, "X-Frappe-Agent-Sequence": sequence,
+                    "X-Frappe-Agent-Signature": base64.urlsafe_b64encode(key.sign(canonical)).rstrip(b"=").decode()}
+            frappe.local.request = Request.from_values(method="POST", content_type="application/json", data=body, headers=headers)
+            return enrollment_routes.installation_status_route()
+
+        try:
+            with patch.object(enrollment_routes.FrappeCertificateStore, "from_environment", return_value=store):
+                response = request()
+                self.assertEqual(200, response.status_code, response.get_data(as_text=True))
+                self.assertTrue(json.loads(response.get_data())["ready"])
+                self.assertEqual("1.1", json.loads(response.get_data())["bootstrap"]["contract_version"])
+                self.assertEqual(409, enrollment_routes.installation_status_route().status_code)
+                self.assertEqual(401, request(signed=False).status_code)
+                self.assertEqual(403, request(body_agent="another-agent").status_code)
+                frappe.db.set_value("Server Agent", agent_id, "setup_required_apps_json", '["frappe","erpnext"]')
+                existing = json.loads(request().get_data())
+                self.assertTrue(existing["ready"])
+                self.assertEqual(["frappe"], existing["bench_required_apps"])
+                frappe.db.set_value("Bench", bench_id, "inventory_updated_at", now - timedelta(seconds=301))
+                self.assertFalse(json.loads(request().get_data())["ready"])
+                self.assertEqual(0, frappe.db.count("Controller Operation", {"server_agent": agent_id}))
+        finally:
+            frappe.local.request = original_request
+            settings.public_controller_url, settings.agent_image_reference = old_url, old_image
+            settings.save(ignore_permissions=True)
 
     def test_default_off_feature_file_blocks_new_erp_operation(self) -> None:
         suffix = uuid.uuid4().hex[:10]
@@ -258,10 +327,10 @@ class TestDisposableControllerSite(FrappeTestCase):
         try:
             frappe.conf[key] = str(path)
             frappe.set_user(operator.name)
-            before = frappe.db.count("Operation")
+            before = frappe.db.count("Controller Operation")
             with self.assertRaises(frappe.PermissionError):
                 create_operation(request_json)
-            self.assertEqual(before, frappe.db.count("Operation"))
+            self.assertEqual(before, frappe.db.count("Controller Operation"))
         finally:
             frappe.set_user("Administrator")
             if previous is None:
@@ -327,7 +396,7 @@ class TestDisposableControllerSite(FrappeTestCase):
             frappe.set_user(operator.name)
             authored = create_operation(request_json)
             self.assertEqual("awaiting_approval", authored["state"])
-            stored = frappe.get_doc("Operation", operation_id)
+            stored = frappe.get_doc("Controller Operation", operation_id)
             self.assertEqual(policy.name, stored.approval_policy)
             self.assertEqual(operator.name, stored.requested_by)
             self.assertTrue(frappe.db.exists("Operation Target", {"operation": operation_id}))
@@ -344,7 +413,7 @@ class TestDisposableControllerSite(FrappeTestCase):
             frappe.set_user(operator.name)
             queued = start_operation(operation_id)
             self.assertEqual("queued", queued["state"])
-            self.assertEqual("queued", frappe.db.get_value("Operation", operation_id, "state"))
+            self.assertEqual("queued", frappe.db.get_value("Controller Operation", operation_id, "state"))
         finally:
             frappe.set_user("Administrator")
 
@@ -435,13 +504,13 @@ class TestDisposableControllerSite(FrappeTestCase):
                 outer_result, sort_keys=True, separators=(",", ":")
             )
             result_hash = hashlib.sha256(encoded_result.encode()).hexdigest()
-            frappe.db.set_value("Operation", preview_id, {
+            frappe.db.set_value("Controller Operation", preview_id, {
                 "state": "succeeded", "result_json": encoded_result,
                 "result_hash": result_hash,
             }, update_modified=False)
             promoted = promote_data_update(preview_id, actual_id)
             self.assertEqual("awaiting_approval", promoted["state"])
-            actual = frappe.get_doc("Operation", actual_id)
+            actual = frappe.get_doc("Controller Operation", actual_id)
             self.assertEqual(preview_id, actual.preview_of)
             self.assertEqual(result_hash, actual.preview_result_hash)
             self.assertFalse(json.loads(actual.payload_json)["payload"]["dry_run"])
@@ -518,7 +587,7 @@ class TestDisposableControllerSite(FrappeTestCase):
         )
         self.assertEqual(1, through)
         self.assertEqual(
-            1, frappe.db.get_value("Operation", operation.name, "last_event_sequence")
+            1, frappe.db.get_value("Controller Operation", operation.name, "last_event_sequence")
         )
         self.assertEqual(
             1,
@@ -546,7 +615,7 @@ class TestDisposableControllerSite(FrappeTestCase):
             received_at=now,
         )
         stored = frappe.db.get_value(
-            "Operation", operation.name, ["state", "result_hash"], as_dict=True
+            "Controller Operation", operation.name, ["state", "result_hash"], as_dict=True
         )
         self.assertEqual("queued", stored.state)
         self.assertRegex(stored.result_hash, r"^[0-9a-f]{64}$")
@@ -616,7 +685,7 @@ class TestDisposableControllerSite(FrappeTestCase):
         queued = store.enqueue_approved_operation(operation.name, now=now)
         self.assertEqual(agent_id, queued["agent_id"])
         command_json, command_hash = frappe.db.get_value(
-            "Operation", operation.name, ["command_json", "command_hash"]
+            "Controller Operation", operation.name, ["command_json", "command_hash"]
         )
         dispatcher = store.dispatcher
         with self.assertRaisesRegex(DispatchConflict, "persisted command is invalid"):
@@ -734,7 +803,7 @@ class TestDisposableControllerSite(FrappeTestCase):
         store.enqueue_approved_operation(poisoned.name, now=now)
         store.enqueue_approved_operation(healthy.name, now=now)
         frappe.db.set_value(
-            "Operation", poisoned.name, "command_hash", "0" * 64,
+            "Controller Operation", poisoned.name, "command_hash", "0" * 64,
             update_modified=False,
         )
 
@@ -746,7 +815,7 @@ class TestDisposableControllerSite(FrappeTestCase):
         self.assertEqual(
             {"state": "failed", "error_code": "command_snapshot_conflict"},
             dict(frappe.db.get_value(
-                "Operation", poisoned.name, ["state", "error_code"], as_dict=True
+                "Controller Operation", poisoned.name, ["state", "error_code"], as_dict=True
             )),
         )
         self.assertEqual(
@@ -900,7 +969,7 @@ class TestDisposableControllerSite(FrappeTestCase):
         payload_hash = hashlib.sha256(payload_json.encode()).hexdigest()
         child = frappe.get_doc(
             {
-                "doctype": "Operation",
+                "doctype": "Controller Operation",
                 "operation_id": child_id,
                 "idempotency_key": f"controller:{child_id}",
                 "protocol_version": "1.0",
@@ -1139,7 +1208,7 @@ class TestDisposableControllerSite(FrappeTestCase):
             [frappe.db.get_value("Bulk Operation Target", name, "state") for name in target_names],
         )
         self.assertEqual(
-            1, frappe.db.count("Operation", {"bulk_parent": parent.name})
+            1, frappe.db.count("Controller Operation", {"bulk_parent": parent.name})
         )
 
         ingestion = ControllerIngestionService(FrappeIngestionRepository())
@@ -1186,7 +1255,7 @@ class TestDisposableControllerSite(FrappeTestCase):
             [frappe.db.get_value("Bulk Operation Target", name, "state") for name in target_names],
         )
         self.assertEqual(
-            3, frappe.db.count("Operation", {"bulk_parent": parent.name})
+            3, frappe.db.count("Controller Operation", {"bulk_parent": parent.name})
         )
 
         child_ids = {canary_id}
@@ -1198,7 +1267,7 @@ class TestDisposableControllerSite(FrappeTestCase):
         self.assertEqual("succeeded", orchestrator.reconcile(parent.name))
         self.assertEqual("succeeded", orchestrator.reconcile(parent.name))
         self.assertEqual(
-            3, frappe.db.count("Operation", {"bulk_parent": parent.name})
+            3, frappe.db.count("Controller Operation", {"bulk_parent": parent.name})
         )
         terminal = frappe.db.get_value(
             "Bulk Operation",

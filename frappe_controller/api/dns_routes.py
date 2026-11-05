@@ -60,7 +60,7 @@ def _operation(value: Mapping[str, Any], route_action: str) -> tuple[str, str]:
         frappe_module=frappe
     ).authenticate_peer(peer, routed_agent, agent_id)
     row = frappe.db.get_value(
-        "Operation", operation_id,
+        "Controller Operation", operation_id,
         ["server_agent", "operation_type", "payload_json", "state"], as_dict=True,
     )
     if not row or row.server_agent != agent_id or row.operation_type not in _CREATE_OPERATIONS:

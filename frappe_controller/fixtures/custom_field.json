@@ -20,7 +20,7 @@
     "fieldname": "controller_site_creation_operation",
     "label": "Site Creation Operation",
     "fieldtype": "Link",
-    "options": "Operation",
+    "options": "Controller Operation",
     "insert_after": "controller_production_managed_site",
     "read_only": 1,
     "no_copy": 1,

@@ -14,7 +14,7 @@ frappe.listview_settings["Bulk Operation"] = {
         title: __("Create Bulk Data Update"),
         fields: [
           {
-            fieldname: "operation_type", fieldtype: "Select", label: __("Operation"),
+            fieldname: "operation_type", fieldtype: "Select", label: __("Controller Operation"),
             options: "data.update\ndata.update.break_glass", reqd: 1,
           },
           {

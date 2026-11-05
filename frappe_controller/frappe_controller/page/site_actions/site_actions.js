@@ -33,6 +33,6 @@ frappe.pages["site-actions"].on_page_load = function (wrapper) {
     });
     const result = response.message || response;
     frappe.show_alert({ message: __("Operation {0} is {1}", [result.operation_id, result.state]), indicator: "green" });
-    frappe.set_route("Form", "Operation", result.operation_id);
+    frappe.set_route("Form", "Controller Operation", result.operation_id);
   });
 };

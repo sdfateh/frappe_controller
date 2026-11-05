@@ -77,7 +77,7 @@ def reconcile_customer_site(customer: str) -> bool:
     customer_doc = _lock_customer(customer)
     if customer_doc.get(_MANAGED_SITE_FIELD) or not customer_doc.get(_SITE_OPERATION_FIELD):
         return False
-    operation = frappe.get_doc("Operation", customer_doc.get(_SITE_OPERATION_FIELD))
+    operation = frappe.get_doc("Controller Operation", customer_doc.get(_SITE_OPERATION_FIELD))
     if operation.operation_type != "site.create_blank" or operation.state != "succeeded":
         return False
     if not creation_handover_ready(operation.result_json, operation.credential_received_at):
@@ -109,7 +109,7 @@ def reconcile_customer_sites() -> None:
     cursor = cache.get_value(_RECONCILE_CURSOR_KEY) or ""
     candidates = frappe.db.sql(
         "SELECT c.name FROM `tabCustomer` c "
-        "JOIN `tabOperation` o ON o.name=c.controller_site_creation_operation "
+        "JOIN `tabController Operation` o ON o.name=c.controller_site_creation_operation "
         "JOIN `tabManaged Site` s ON s.domain=JSON_UNQUOTE(JSON_EXTRACT(o.payload_json,'$.domain')) "
         "AND s.server_agent=o.server_agent AND s.bench=o.bench "
         "WHERE IFNULL(c.controller_production_managed_site,'')='' "
@@ -164,7 +164,7 @@ def create_production_site(
     try:
         payload = validate_lifecycle_payload("site.create_blank", {"domain": _text(domain, "Domain")}).normalized_payload
         if customer_doc.get(_SITE_OPERATION_FIELD):
-            existing = frappe.get_doc("Operation", customer_doc.get(_SITE_OPERATION_FIELD))
+            existing = frappe.get_doc("Controller Operation", customer_doc.get(_SITE_OPERATION_FIELD))
             if (
                 existing.operation_type == "site.create_blank"
                 and existing.server_agent == server_agent and existing.bench == bench

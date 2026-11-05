@@ -99,7 +99,7 @@ def create_operation(request_json: str) -> Mapping[str, Any]:
             ),
         )
         # Existing immutable authoring requests retain their idempotent response.
-        if not frappe.db.exists("Operation", request.operation_id):
+        if not frappe.db.exists("Controller Operation", request.operation_id):
             _check_blank_creation(request.operation_type, request.server_agent, request.bench, request.payload)
         authored = OperationAuthoringService(
             FrappeOperationAuthoringRepository(frappe), validate_lifecycle_payload
@@ -131,7 +131,7 @@ def start_operation(operation_id: str) -> Mapping[str, Any]:
     if canonical != operation_id.lower():
         frappe.throw("operation id must be canonical", frappe.ValidationError)
     row = frappe.db.get_value(
-        "Operation", canonical,
+        "Controller Operation", canonical,
         [
             "requested_by", "approval_status", "required_approvals", "state",
             "server_agent", "operation_type", "payload_json", "bulk_parent",
@@ -167,7 +167,7 @@ def start_operation(operation_id: str) -> Mapping[str, Any]:
 def retry_operation(operation_id: str, recovery_confirmed: Any = False) -> Mapping[str, Any]:
     """Create one successor with fresh authorization; never reopen an old command."""
     actor = _require_author()
-    original = frappe.get_doc("Operation", operation_id)
+    original = frappe.get_doc("Controller Operation", operation_id)
     original.check_permission("read")
     if original.requested_by != actor and "Controller Admin" not in frappe.get_roles(actor):
         frappe.throw("Only the requester or Controller Admin may retry an operation", frappe.PermissionError)
@@ -177,12 +177,12 @@ def retry_operation(operation_id: str, recovery_confirmed: Any = False) -> Mappi
         "SELECT name FROM `tabCustomer` WHERE controller_site_creation_operation=%s ORDER BY name FOR UPDATE",
         (original.name,), as_dict=True,
     )
-    frappe.db.sql("SELECT name FROM `tabOperation` WHERE name=%s FOR UPDATE", (original.name,))
+    frappe.db.sql("SELECT name FROM `tabController Operation` WHERE name=%s FOR UPDATE", (original.name,))
     original.reload()
     try:
         validate_retry_source(original, recovery_confirmed=recovery_confirmed in (True, 1, "1"))
         existing = frappe.db.sql(
-            "SELECT name,state FROM `tabOperation` WHERE retry_of=%s AND IFNULL(bulk_parent,'')='' "
+            "SELECT name,state FROM `tabController Operation` WHERE retry_of=%s AND IFNULL(bulk_parent,'')='' "
             "ORDER BY creation LIMIT 1 FOR UPDATE", (original.name,), as_dict=True,
         )
         if existing:

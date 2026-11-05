@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
+from datetime import UTC, datetime
 from typing import Any
 
 import frappe
@@ -13,6 +14,9 @@ from werkzeug.wrappers import Response
 from ..frappe_security_store import FrappeCertificateStore
 from ..feature_flags import agent_environment, runtime_feature_config
 from ..controller_settings import load_controller_settings
+from ..agent_request_auth import trusted_peer_and_route_from_frappe_request
+from ..setup_profiles import required_apps
+from ..setup_readiness import installation_checks
 from ..security import (
     ControllerRequestError,
     TrustedAdministrator,
@@ -25,7 +29,6 @@ _ENROLLMENT_LIMIT = 96 * 1024
 _ENROLL_FIELDS = frozenset({
     "protocol_version", "agent_id", "enrollment_token", "signing_public_key_pem",
 })
-_BOOTSTRAP_CONTRACT_VERSION = "1.0"
 
 
 def _json_response(payload: Mapping[str, Any], *, status: int = 200) -> Response:
@@ -94,12 +97,12 @@ def _json_list(value: Any, field: str) -> list[str]:
     return list(dict.fromkeys(parsed))
 
 
-def _bootstrap_profile(agent_id: str) -> dict[str, Any]:
+def _bootstrap_profile(agent_id: str, contract_version: str = "1.0") -> dict[str, Any]:
     settings = load_controller_settings(frappe)
     agent = frappe.db.get_value(
         "Server Agent",
         agent_id,
-        ["agent_id", "audience", "protocol_version", "allowed_site_suffixes_json", "allowed_operations_json"],
+        ["agent_id", "audience", "protocol_version", "allowed_site_suffixes_json", "allowed_operations_json", "setup_required_apps_json"],
         as_dict=True,
     )
     if not agent:
@@ -109,7 +112,7 @@ def _bootstrap_profile(agent_id: str) -> dict[str, Any]:
     if not settings.public_controller_url or not settings.agent_image_reference or not suffixes or not operations:
         raise ControllerRequestError("bootstrap_policy_incomplete", 409)
     return {
-        "contract_version": _BOOTSTRAP_CONTRACT_VERSION,
+        "contract_version": contract_version,
         "agent": {
             "agent_id": agent.agent_id,
             "audience": agent.audience,
@@ -122,6 +125,7 @@ def _bootstrap_profile(agent_id: str) -> dict[str, Any]:
         "policy": {
             "allowed_site_suffixes": suffixes,
             "allowed_operations": operations,
+            **({"required_apps": required_apps(agent.setup_required_apps_json)} if contract_version == "1.1" else {}),
         },
         "image": {
             "reference": settings.agent_image_reference,
@@ -171,14 +175,24 @@ def bootstrap_agent_route(**_request_arguments: Any) -> Response:
     """Consume a one-time token, pin a signing key, and return install policy."""
     try:
         raw = _request_body()
-        body = parse_exact_json(raw, _ENROLL_FIELDS, limit=_ENROLLMENT_LIMIT)
+        import json
+        try:
+            candidate = json.loads(raw)
+        except (ValueError, TypeError):
+            raise ControllerRequestError("invalid_enrollment_request") from None
+        fields = _ENROLL_FIELDS | ({"bootstrap_contract_version"} if isinstance(candidate, dict) and "bootstrap_contract_version" in candidate else set())
+        body = parse_exact_json(raw, fields, limit=_ENROLLMENT_LIMIT)
         if (
             body.get("protocol_version") != "1.0"
             or not isinstance(body.get("agent_id"), str)
             or not isinstance(body.get("enrollment_token"), str)
         ):
             raise ControllerRequestError("invalid_enrollment_request")
-        bootstrap = _bootstrap_profile(body["agent_id"])
+        version = body.get("bootstrap_contract_version", "1.0")
+        if version not in ("1.0", "1.1"):
+            raise ControllerRequestError("unsupported_bootstrap_contract")
+        _require_inventory(body["agent_id"])
+        bootstrap = _bootstrap_profile(body["agent_id"], version)
         public_key = _signing_public_key(body.get("signing_public_key_pem"))
         FrappeCertificateStore.from_environment(
             frappe_module=frappe
@@ -189,5 +203,32 @@ def bootstrap_agent_route(**_request_arguments: Any) -> Response:
             actor=f"enrollment-token:{body['agent_id']}",
         )
         return _json_response({"accepted": True, "bootstrap": bootstrap})
+    except Exception as error:
+        return _error_response(error)
+
+
+@frappe.whitelist(allow_guest=True, methods=["POST"])
+def installation_status_route(**_request_arguments: Any) -> Response:
+    """Refresh policy or inspect readiness for the pinned key without leasing work."""
+    try:
+        body = parse_exact_json(_request_body(), frozenset({"agent_id", "bench_id"}), limit=4096)
+        if not isinstance(body["agent_id"], str) or not isinstance(body["bench_id"], str) or len(body["bench_id"]) > 64:
+            raise ControllerRequestError("invalid_setup_request")
+        peer, routed = trusted_peer_and_route_from_frappe_request(frappe.request, "setup:status")
+        FrappeCertificateStore.from_environment(frappe_module=frappe).authenticate_peer(peer, routed, body["agent_id"])
+        _require_inventory(body["agent_id"])
+        bootstrap = _bootstrap_profile(body["agent_id"], "1.1")
+        agent = frappe.db.get_value("Server Agent", body["agent_id"],
+            ["enabled", "status", "reported_status", "drain_requested", "last_seen", "inventory_updated_at", "inventory_digest"], as_dict=True)
+        bench = frappe.db.get_value("Bench", {"bench_id": body["bench_id"], "server_agent": body["agent_id"]},
+            ["server_agent", "enabled", "health_status", "inventory_updated_at", "required_apps_json", "installed_apps_json"], as_dict=True) if body["bench_id"] else None
+        # Setup app defaults are a template for new installations. Existing
+        # Benches may legitimately have different administrator-owned app sets.
+        try:
+            bench_apps = required_apps(bench.required_apps_json) if bench and bench.required_apps_json else []
+        except (ValueError, TypeError):
+            bench_apps = []
+        checks = installation_checks(agent, bench, agent_id=body["agent_id"], apps=bench_apps, now=datetime.now(UTC))
+        return _json_response({"accepted": True, "bootstrap": bootstrap, "ready": all(checks.values()), "checks": checks, "bench_required_apps": bench_apps})
     except Exception as error:
         return _error_response(error)

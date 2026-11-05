@@ -62,7 +62,7 @@ def _save(document: Any) -> None:
 
 def _counts(agent_name: str) -> dict[str, int]:
     return {
-        state: int(frappe.db.count("Operation", {"server_agent": agent_name, "state": state}))
+        state: int(frappe.db.count("Controller Operation", {"server_agent": agent_name, "state": state}))
         for state in ("queued", "leased", "running")
     }
 

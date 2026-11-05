@@ -31,7 +31,7 @@ function refresh(state) { buttons = {}; frm.doc.state = state; handlers.refresh(
   assert.equal(request.args.operation_id, "original-1");
   assert.equal(request.args.recovery_confirmed, 1);
   assert.equal(request.type, "POST");
-  assert.deepEqual(route, ["Form", "Operation", "retry-1"]);
+  assert.deepEqual(route, ["Form", "Controller Operation", "retry-1"]);
   frappe.user_roles = ["Auditor"]; refresh("failed"); assert.equal(buttons.Retry, undefined);
   frappe.user_roles = ["Operator"]; frm.doc.requested_by = "someone-else";
   refresh("failed"); assert.equal(buttons.Retry, undefined);

@@ -1,0 +1,53 @@
+/* Keep Controller navigation distinct without changing other Desk sidebars. */
+.body-sidebar[data-title="Frappe Controller"] {
+  --controller-nav-accent: #1448a4;
+  --controller-nav-selected: #eaf0fb;
+  --controller-nav-surface: #f8fafc;
+  background-color: var(--controller-nav-surface);
+}
+
+[data-theme="dark"] .body-sidebar[data-title="Frappe Controller"] {
+  --controller-nav-accent: #8ab4ff;
+  --controller-nav-selected: #1d2e49;
+  --controller-nav-surface: #171e29;
+}
+
+.body-sidebar[data-title="Frappe Controller"] .sidebar-items .item-anchor {
+  min-height: 32px;
+  border-radius: 6px;
+}
+
+.body-sidebar[data-title="Frappe Controller"] .sidebar-items > .section-item {
+  margin-top: 6px;
+}
+
+.body-sidebar[data-title="Frappe Controller"] .section-item > .standard-sidebar-item .sidebar-item-label {
+  font-weight: 550;
+}
+
+.body-sidebar[data-title="Frappe Controller"] .standard-sidebar-item.active-sidebar {
+  background: var(--controller-nav-selected);
+  box-shadow: inset 3px 0 var(--controller-nav-accent);
+  border-radius: 6px;
+}
+
+.body-sidebar[data-title="Frappe Controller"] .standard-sidebar-item.active-sidebar .item-anchor {
+  color: var(--controller-nav-accent);
+  font-weight: 600;
+}
+
+.body-sidebar[data-title="Frappe Controller"] .item-anchor:focus-visible,
+.body-sidebar[data-title="Frappe Controller"] .drop-icon:focus-visible {
+  outline: 2px solid var(--controller-nav-accent);
+  outline-offset: -2px;
+}
+
+[dir="rtl"] .body-sidebar[data-title="Frappe Controller"] .standard-sidebar-item.active-sidebar {
+  box-shadow: inset -3px 0 var(--controller-nav-accent);
+}
+
+@media (pointer: coarse) {
+  .body-sidebar[data-title="Frappe Controller"] .sidebar-items .item-anchor {
+    min-height: 40px;
+  }
+}

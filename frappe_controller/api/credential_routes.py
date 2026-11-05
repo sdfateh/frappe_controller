@@ -47,11 +47,11 @@ def store_credential_route(**_request_arguments: Any) -> Response:
             peer, routed, agent_id
         )
         if not frappe.db.sql(
-            "SELECT name FROM `tabOperation` WHERE name = %s FOR UPDATE",
+            "SELECT name FROM `tabController Operation` WHERE name = %s FOR UPDATE",
             operation_id,
         ):
             raise ControllerRequestError("unknown_operation", 404)
-        operation = frappe.get_doc("Operation", operation_id)
+        operation = frappe.get_doc("Controller Operation", operation_id)
         if operation.server_agent != agent_id or operation.operation_type not in {
             "site.create", "site.create_blank", "site.create_from_backup",
         }:
@@ -85,11 +85,11 @@ def consume_operation_credential(operation_id: str) -> Response:
     if not isinstance(operation_id, str) or not _OPERATION_ID.fullmatch(operation_id):
         frappe.throw("Operation ID is invalid", frappe.ValidationError)
     if not frappe.db.sql(
-        "SELECT name FROM `tabOperation` WHERE name = %s FOR UPDATE",
+        "SELECT name FROM `tabController Operation` WHERE name = %s FOR UPDATE",
         operation_id,
     ):
         frappe.throw("Operation does not exist", frappe.DoesNotExistError)
-    operation = frappe.get_doc("Operation", operation_id)
+    operation = frappe.get_doc("Controller Operation", operation_id)
     if not user or user == "Guest" or not (
         "Controller Admin" in frappe.get_roles(user) or operation.requested_by == user
     ):

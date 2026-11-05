@@ -1,0 +1,12 @@
+# Only application source and package metadata belong in the image context.
+*
+!frappe_controller/
+!frappe_controller/**
+!pyproject.toml
+!README.md
+!deployment/
+!deployment/whitelabel-v16-onboarding.patch
+!deployment/verify_whitelabel_onboarding.py
+**/__pycache__/
+**/*.pyc
+**/.git/

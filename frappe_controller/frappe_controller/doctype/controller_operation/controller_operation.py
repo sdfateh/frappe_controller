@@ -29,7 +29,7 @@ _CREDENTIAL_FIELDS = (
 )
 
 
-class Operation(Document):
+class ControllerOperation(Document):
     def before_insert(self):
         if not self.requested_by:
             self.requested_by = frappe.session.user
@@ -67,7 +67,7 @@ class Operation(Document):
                 frappe.throw("An actual data update requires a successful preview", frappe.PermissionError)
             if self.preview_of:
                 other_promotion = frappe.db.exists(
-                    "Operation",
+                    "Controller Operation",
                     {"preview_of": self.preview_of, "name": ["!=", self.name or ""]},
                 )
                 bulk_binding = frappe.db.get_value(
@@ -81,7 +81,7 @@ class Operation(Document):
                         frappe.DuplicateEntryError,
                     )
                 preview = frappe.db.get_value(
-                    "Operation", self.preview_of,
+                    "Controller Operation", self.preview_of,
                     [
                         "operation_type", "server_agent", "bench", "managed_site",
                         "requested_by", "state", "result_hash", "payload_json",
@@ -147,7 +147,7 @@ class Operation(Document):
                     "Bulk Operation Target", lineage_target, "child_operation"
                 )
                 previous = frappe.db.get_value(
-                    "Operation",
+                    "Controller Operation",
                     self.retry_of,
                     ["bulk_parent", "operation_type", "payload_hash", "state"],
                     as_dict=True,
@@ -172,7 +172,7 @@ class Operation(Document):
 
             if self.is_new() and not self.flags.get("controller_service"):
                 frappe.throw("Retry lineage is service-owned", frappe.PermissionError)
-            source = frappe.get_doc("Operation", self.retry_of)
+            source = frappe.get_doc("Controller Operation", self.retry_of)
             try:
                 validate_retry_source(source, recovery_confirmed=True)
             except OperationAuthoringError as exc:
@@ -220,9 +220,8 @@ class Operation(Document):
             },
             pluck="email",
         )
-        operation_url = frappe.utils.get_url(
-            f"/app/operation/{quote(self.operation_id, safe='')}"
-        )
+        from frappe_controller.compat import desk_route
+        operation_url = frappe.utils.get_url(desk_route(f"controller-operation/{quote(self.operation_id, safe='')}"))
         for recipient in sorted({email for email in recipients if email}):
             frappe.sendmail(
                 recipients=[recipient],
@@ -233,10 +232,10 @@ class Operation(Document):
                     f"<p><strong>Requested by:</strong> {frappe.utils.escape_html(self.requested_by)}</p>"
                     f'<p><a href="{frappe.utils.escape_html(operation_url)}">Review approval request</a></p>'
                 ),
-                reference_doctype="Operation",
+                reference_doctype="Controller Operation",
                 reference_name=self.operation_id,
                 redact_message_after_send=True,
             )
 
     def on_trash(self):
-        prevent_delete("Operation")
+        prevent_delete("Controller Operation")

@@ -1,6 +1,6 @@
 {
   "doctype": "DocType",
-  "name": "Operation",
+  "name": "Controller Operation",
   "module": "Frappe Controller",
   "custom": 0,
   "is_submittable": 0,
@@ -110,14 +110,14 @@
       "fieldname": "retry_of",
       "label": "Retry Of Operation",
       "fieldtype": "Link",
-      "options": "Operation",
+      "options": "Controller Operation",
       "read_only": 1
     },
     {
       "fieldname": "preview_of",
       "label": "Data Update Preview Operation",
       "fieldtype": "Link",
-      "options": "Operation",
+      "options": "Controller Operation",
       "read_only": 1
     },
     {

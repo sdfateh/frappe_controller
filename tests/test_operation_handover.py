@@ -38,14 +38,14 @@ class HandoverTests(unittest.TestCase):
             name="Customer A", controller_production_managed_site="site-a", check_permission=Mock(),
         )
         self.frappe = SimpleNamespace(db=Mock(), get_all=Mock(return_value=[self.customer]),
-            get_doc=lambda dt, name: self.operation if dt == "Operation" else self.customer)
+            get_doc=lambda dt, name: self.operation if dt == "Controller Operation" else self.customer)
         self.frappe.db.get_value.return_value = json.dumps(self.apps)
         patcher = patch.object(handover, "frappe", self.frappe)
         patcher.start()
         self.addCleanup(patcher.stop)
 
     def test_success_uses_bench_policy_not_nonexistent_operation_field(self):
-        schema = json.loads((ROOT / "frappe_controller/frappe_controller/doctype/operation/operation.json").read_text())
+        schema = json.loads((ROOT / "frappe_controller/frappe_controller/doctype/controller_operation/controller_operation.json").read_text())
         self.assertNotIn("required_apps_json", [field["fieldname"] for field in schema["fields"]])
         self.assertTrue(handover.get_site_handover_status("op")["ready"])
         self.frappe.db.get_value.assert_called_once_with("Bench", "bench-a", "required_apps_json")

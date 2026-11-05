@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "controller_site": "controller.kaleam.net",
+  "agent_id": "prod-server-01",
+  "server_name": "Production ERP host",
+  "bench_id": "erp",
+  "domain": "erp.kaleam.net",
+  "environment": "production",
+  "mode": "registration_only",
+  "enabled": false,
+  "allowed_operations": [],
+  "target_compose_file": "/deploy/erp/compose.yml",
+  "target_backend_service": "backend",
+  "target_frontend_service": "erp@docker",
+  "target_sites_volume": "erp_sites",
+  "target_container_sites_path": "/home/frappe/frappe-bench/sites"
+}

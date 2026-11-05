@@ -4,12 +4,25 @@ app_publisher = "Frappe Controller maintainers"
 app_description = "Central control plane for allowlisted Frappe server agents"
 app_email = "security@example.invalid"
 app_license = "MIT"
+from frappe_controller.compat import desk_route
+
+app_logo_url = "/assets/frappe_controller/images/controller.svg"
+add_to_apps_screen = [{
+    "name": "frappe_controller",
+    "logo": app_logo_url,
+    "title": "Frappe Controller",
+    "route": desk_route("frappe-controller"),
+    "has_permission": "frappe_controller.compat.has_app_permission",
+}]
 required_apps = ["frappe", "erpnext"]
 app_include_js = [
-    "/assets/frappe_controller/js/controller_workspace.js",
+    "controller_workspace.bundle.js",
     "/assets/frappe_controller/js/operation_timeline.js",
 ]
-app_include_css = ["/assets/frappe_controller/css/operation_timeline.css"]
+app_include_css = [
+    "/assets/frappe_controller/css/operation_timeline.css",
+    "controller_sidebar.bundle.css",
+]
 doctype_js = {
     "Customer": "public/js/customer.js",
 }
@@ -34,6 +47,7 @@ _CONTROLLER_ROLES = ("Controller Admin", "Operator", "Approver", "Auditor")
 after_install = "frappe_controller.hooks.ensure_controller_roles"
 after_migrate = "frappe_controller.hooks.ensure_controller_roles"
 before_install = "frappe_controller.hooks.ensure_controller_roles"
+before_migrate = "frappe_controller.operation_namespace.migrate"
 
 scheduler_events = {
     "cron": {

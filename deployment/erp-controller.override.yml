@@ -1,0 +1,34 @@
+# Merge AFTER /deploy/erp/compose.yml. Reuse the protected Controller secret
+# volume; never copy its contents or ERP's encryption key into source control.
+x-controller-image: &controller-image
+  image: ${ERP_CONTROLLER_IMAGE:-frappe-controller-erp:v16-bulk-layout-20261031}
+  # This image is built locally from repository source, not a registry tag.
+  pull_policy: never
+
+x-controller-runtime: &controller-runtime
+  <<: *controller-image
+  environment:
+    FRAPPE_CONTROLLER_TOKEN_PEPPER_FILE: /run/controller-config/token-pepper
+  volumes:
+    - controller-config:/run/controller-config:ro
+
+services:
+  configurator:
+    <<: *controller-image
+  backend:
+    <<: *controller-runtime
+  frontend:
+    <<: *controller-image
+  websocket:
+    <<: *controller-image
+  queue-short:
+    <<: *controller-runtime
+  queue-long:
+    <<: *controller-runtime
+  scheduler:
+    <<: *controller-runtime
+
+volumes:
+  controller-config:
+    external: true
+    name: controller_controller-config

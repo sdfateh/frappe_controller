@@ -9,7 +9,7 @@ from ..creation_readiness import creation_handover_ready
 
 @frappe.whitelist()
 def get_site_handover_status(operation_id: str) -> dict:
-    operation = frappe.get_doc("Operation", operation_id)
+    operation = frappe.get_doc("Controller Operation", operation_id)
     operation.check_permission("read")
     if operation.operation_type not in {"site.create", "site.create_blank", "site.create_from_backup"}:
         return {"applicable": False}

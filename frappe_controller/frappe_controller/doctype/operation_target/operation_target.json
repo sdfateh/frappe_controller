@@ -30,9 +30,9 @@
   "fields": [
     {
       "fieldname": "operation",
-      "label": "Operation",
+      "label": "Controller Operation",
       "fieldtype": "Link",
-      "options": "Operation",
+      "options": "Controller Operation",
       "reqd": 1,
       "in_list_view": 1
     },

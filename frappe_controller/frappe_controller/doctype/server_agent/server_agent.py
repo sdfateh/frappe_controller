@@ -10,6 +10,7 @@ from frappe_controller.frappe_controller.doctype._invariants import (
 )
 from frappe_controller.controller_settings import load_controller_settings
 from frappe_controller.frappe_security_store import FrappeCertificateStore
+from frappe_controller.setup_profiles import PROFILES, required_apps
 
 _AGENT_ID = re.compile(r"^[a-z0-9][a-z0-9._-]{0,127}$")
 _VERSION = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._+-]{0,63}$")
@@ -63,6 +64,10 @@ class ServerAgent(Document):
             frappe.throw("Allowed site suffixes must be non-empty strings", frappe.ValidationError)
         if any(not isinstance(value, str) or not value for value in operations):
             frappe.throw("Allowed operations must be non-empty strings", frappe.ValidationError)
+        try:
+            required_apps(self.get("setup_required_apps_json"))
+        except (ValueError, TypeError):
+            frappe.throw("Setup required apps must be unique app names starting with frappe", frappe.ValidationError)
         for field in ("enrollment_token_hash", "expected_public_key_sha256"):
             if self.get(field):
                 require_sha256(self.get(field), field)
@@ -141,6 +146,13 @@ class ServerAgent(Document):
 
     def on_trash(self):
         prevent_delete("Server Agent")
+
+
+@frappe.whitelist()
+def get_setup_profiles():
+    if "Controller Admin" not in frappe.get_roles():
+        frappe.throw("Controller Admin role is required", frappe.PermissionError)
+    return PROFILES
 
 
 @frappe.whitelist()

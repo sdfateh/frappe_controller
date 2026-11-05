@@ -54,7 +54,7 @@ handlers.refresh(frm);
 assert.equal(buttons.length, 1);
 assert.equal(buttons[0].label, "Site Operation");
 buttons[0].action();
-assert.deepEqual(route, ["Form", "Operation", "operation-1"]);
+assert.deepEqual(route, ["Form", "Controller Operation", "operation-1"]);
 frm.doc = {};
 frm.add_custom_button = (label, action) => { button = action; };
 frappe.user_roles = ["Operator"];

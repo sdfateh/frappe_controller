@@ -110,7 +110,7 @@ class FrappeOperationAuthoringRepository(OperationAuthoringRepository):
 
     def _existing_is_identical(self, operation: AuthoredOperation) -> bool:
         row = self.db.get_value(
-            "Operation", operation.operation_id,
+            "Controller Operation", operation.operation_id,
             [
                 "operation_id", "idempotency_key", "protocol_version", "server_agent",
                 "bench", "managed_site", "operation_type", "payload_json", "payload_hash",
@@ -152,12 +152,12 @@ class FrappeOperationAuthoringRepository(OperationAuthoringRepository):
         return True
 
     def create(self, operation: AuthoredOperation) -> Any:
-        if self.db.exists("Operation", operation.operation_id):
+        if self.db.exists("Controller Operation", operation.operation_id):
             if self._existing_is_identical(operation):
-                return self.frappe.get_doc("Operation", operation.operation_id)
+                return self.frappe.get_doc("Controller Operation", operation.operation_id)
             raise OperationAuthoringError("operation id already exists")
         operation_doc = self.frappe.get_doc({
-            "doctype": "Operation",
+            "doctype": "Controller Operation",
             "operation_id": operation.operation_id,
             "idempotency_key": operation.idempotency_key,
             "protocol_version": operation.protocol_version,

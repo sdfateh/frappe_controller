@@ -275,11 +275,11 @@ class ReconciliationBatchTests(unittest.TestCase):
         self.database.executescript('''
             CREATE TABLE `tabCustomer` (name TEXT, controller_site_creation_operation TEXT,
                 controller_production_managed_site TEXT);
-            CREATE TABLE `tabOperation` (name TEXT, payload_json TEXT, server_agent TEXT,
+            CREATE TABLE `tabController Operation` (name TEXT, payload_json TEXT, server_agent TEXT,
                 bench TEXT, operation_type TEXT, state TEXT);
             CREATE TABLE `tabManaged Site` (domain TEXT, server_agent TEXT, bench TEXT,
                 status TEXT, inventory_updated_at TEXT);
-            INSERT INTO `tabOperation` VALUES ('op', '{"domain":"site.example.com"}',
+            INSERT INTO `tabController Operation` VALUES ('op', '{"domain":"site.example.com"}',
                 'agent', 'bench', 'site.create_blank', 'succeeded');
             INSERT INTO `tabManaged Site` VALUES ('site.example.com', 'agent', 'bench', 'active', '2026-10-02');
         ''')

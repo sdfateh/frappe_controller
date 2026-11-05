@@ -6,6 +6,8 @@
   "issingle": 1,
   "track_changes": 1,
   "field_order": [
+    "source_data_section",
+    "source_data_api_url",
     "agent_installation_section",
     "public_controller_url",
     "agent_image_reference",
@@ -27,6 +29,8 @@
     "s3_max_restore_bytes"
   ],
   "fields": [
+    {"fieldname": "source_data_section", "label": "Source Data", "fieldtype": "Section Break"},
+    {"fieldname": "source_data_api_url", "label": "Source Data API URL", "fieldtype": "Data", "length": 300, "default": "https://dev-priv-api.kaleam.net", "description": "Public HTTPS origin only, for example https://dev-priv-api.kaleam.net. Do not include /tires or /docs. Applies to browsing and all catalog changes immediately after saving; reopen Source Data forms after changing it."},
     {"fieldname": "agent_installation_section", "label": "Agent Installation", "fieldtype": "Section Break"},
     {"fieldname": "public_controller_url", "label": "Public Controller URL", "fieldtype": "Data", "description": "HTTPS URL used by managed servers, for example https://controller.example.com"},
     {"fieldname": "agent_image_reference", "label": "Agent Image Reference", "fieldtype": "Data", "description": "Immutable image, for example kaleam/frappe-deploy-agent@sha256:..."},

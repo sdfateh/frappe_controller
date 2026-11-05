@@ -8,7 +8,7 @@ frappe.ui.form.on("Customer", {
 
     if (frm.doc.controller_site_creation_operation) {
       frm.add_custom_button(__("Site Operation"), () => {
-        frappe.set_route("Form", "Operation", frm.doc.controller_site_creation_operation);
+        frappe.set_route("Form", "Controller Operation", frm.doc.controller_site_creation_operation);
       });
     }
     if (frm.doc.controller_production_managed_site || frm.doc.controller_site_creation_operation) {
@@ -89,7 +89,7 @@ frappe.ui.form.on("Customer", {
               message: __("Site operation {0} is {1}", [result.operation_id, result.state]),
               indicator: "green",
             });
-            frappe.set_route("Form", "Operation", result.operation_id);
+            frappe.set_route("Form", "Controller Operation", result.operation_id);
           });
         },
       });

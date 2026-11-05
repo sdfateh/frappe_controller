@@ -1,0 +1,144 @@
+{
+  "vehicles": {
+    "singular": "vehicle",
+    "label": "Vehicle",
+    "required": [
+      "brand",
+      "model"
+    ],
+    "fields": {
+      "brand": {
+        "type": "string",
+        "example": "Toyota",
+        "maxLength": 100
+      },
+      "model": {
+        "type": "string",
+        "example": "Corolla",
+        "maxLength": 100
+      },
+      "year": {
+        "type": "number",
+        "example": 2026,
+        "nullable": true
+      },
+      "engine": {
+        "type": "string",
+        "example": "1.8L",
+        "maxLength": 100,
+        "nullable": true
+      },
+      "structureType": {
+        "type": "string",
+        "example": "Sedan",
+        "default": "",
+        "maxLength": 100
+      }
+    }
+  },
+  "tires": {
+    "singular": "tire",
+    "label": "Tire",
+    "required": [
+      "tire_name"
+    ],
+    "fields": {
+      "tire_name": {
+        "type": "string",
+        "maxLength": 255
+      },
+      "tire_size": {
+        "type": "string",
+        "maxLength": 50,
+        "nullable": true
+      },
+      "brand": {
+        "type": "string",
+        "maxLength": 100,
+        "nullable": true
+      },
+      "tire_type": {
+        "type": "string",
+        "maxLength": 50,
+        "nullable": true
+      },
+      "model": {
+        "type": "string",
+        "maxLength": 100,
+        "nullable": true
+      },
+      "aspect_ratio": {
+        "type": "string",
+        "maxLength": 100,
+        "nullable": true
+      },
+      "load_index": {
+        "type": "string",
+        "maxLength": 20,
+        "nullable": true
+      },
+      "max_inflation_pressure": {
+        "type": "string",
+        "maxLength": 20,
+        "nullable": true
+      },
+      "max_load": {
+        "type": "string",
+        "maxLength": 30,
+        "nullable": true
+      },
+      "product_code": {
+        "type": "string",
+        "maxLength": 50,
+        "nullable": true
+      },
+      "rim_diameter": {
+        "type": "number",
+        "minimum": 0.1,
+        "maximum": 999.9,
+        "nullable": true
+      },
+      "section_width": {
+        "type": "number",
+        "minimum": 0.1,
+        "maximum": 999.9,
+        "nullable": true
+      },
+      "sidewall": {
+        "type": "string",
+        "maxLength": 50,
+        "nullable": true
+      },
+      "speed_index": {
+        "type": "string",
+        "maxLength": 20,
+        "nullable": true
+      },
+      "tread_rating_utqg": {
+        "type": "string",
+        "maxLength": 20,
+        "nullable": true
+      }
+    }
+  },
+  "colors": {
+    "singular": "color",
+    "label": "Color",
+    "required": [
+      "colorNameEN",
+      "colorNameAR"
+    ],
+    "fields": {
+      "colorNameEN": {
+        "type": "string",
+        "example": "Black",
+        "maxLength": 100
+      },
+      "colorNameAR": {
+        "type": "string",
+        "example": "أسود",
+        "maxLength": 100
+      }
+    }
+  }
+}

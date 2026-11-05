@@ -22,7 +22,7 @@ class OperationApproval(Document):
         self.approver = frappe.session.user
         self.decided_at = now_datetime()
         operation = frappe.db.get_value(
-            "Operation", self.operation,
+            "Controller Operation", self.operation,
             ["payload_hash", "preview_result_hash"], as_dict=True,
         )
         target_key = frappe.db.get_value(
@@ -54,7 +54,7 @@ class OperationApproval(Document):
         if "Approver" not in frappe.get_roles(self.approver):
             frappe.throw("Approver role is required", frappe.PermissionError)
         operation = frappe.db.get_value(
-            "Operation", self.operation,
+            "Controller Operation", self.operation,
             [
                 "requested_by", "approval_policy", "approval_status", "required_approvals",
                 "payload_hash", "preview_result_hash", "server_agent",
@@ -93,14 +93,14 @@ class OperationApproval(Document):
 
     def after_insert(self):
         if self.decision == "rejected":
-            frappe.db.set_value("Operation", self.operation, {"approval_status": "rejected"}, update_modified=False)
+            frappe.db.set_value("Controller Operation", self.operation, {"approval_status": "rejected"}, update_modified=False)
             return
         approved = frappe.db.count("Operation Approval", {"operation": self.operation, "decision": "approved"})
-        required = frappe.db.get_value("Operation", self.operation, "required_approvals") or 0
+        required = frappe.db.get_value("Controller Operation", self.operation, "required_approvals") or 0
         values = {"approval_count": approved}
         if approved >= required:
             values["approval_status"] = "approved"
-        frappe.db.set_value("Operation", self.operation, values, update_modified=False)
+        frappe.db.set_value("Controller Operation", self.operation, values, update_modified=False)
 
     def on_trash(self):
         prevent_delete("Operation Approval")

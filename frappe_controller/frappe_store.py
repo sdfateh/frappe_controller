@@ -96,7 +96,7 @@ class FrappeCommandStore:
             "SELECT o.name, o.command_json, o.command_hash, o.operation_type, "
             "o.payload_json, o.bulk_parent, o.bulk_target, "
             "COALESCE(bt.environment_snapshot,s.environment,a.environment) "
-            "AS target_environment FROM `tabOperation` o "
+            "AS target_environment FROM `tabController Operation` o "
             "JOIN `tabServer Agent` a ON a.name=o.server_agent "
             "LEFT JOIN `tabManaged Site` s ON s.name=o.managed_site "
             "LEFT JOIN `tabBulk Operation Target` bt ON bt.name=o.bulk_target "
@@ -125,7 +125,7 @@ class FrappeCommandStore:
                     "error_code": "command_snapshot_conflict",
                     "completed_at": database_current,
                 }
-                self.db.set_value("Operation", candidate["name"], failure, update_modified=False)
+                self.db.set_value("Controller Operation", candidate["name"], failure, update_modified=False)
                 self.db.set_value(
                     "Operation Target", {"operation": candidate["name"]},
                     {"state": failure["state"], "error_code": failure["error_code"]},
@@ -152,7 +152,7 @@ class FrappeCommandStore:
         envelope["issued_at"] = timestamp(current)
         envelope["expires_at"] = timestamp(expires)
         self.db.set_value(
-            "Operation",
+            "Controller Operation",
             operation["name"],
             {
                 "state": "leased",

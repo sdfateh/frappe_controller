@@ -283,7 +283,7 @@ class FrappeIngestionRepository:
                 "SELECT o.name, o.operation_id, a.agent_id, b.bench_id, s.domain AS site_domain, "
                 "o.operation_type, o.payload_json, o.state, o.last_event_sequence, o.result_hash, o.result_json, "
                 "o.bulk_target, o.credential_received_at, b.required_apps_json "
-                "FROM `tabOperation` o JOIN `tabServer Agent` a ON a.name=o.server_agent "
+                "FROM `tabController Operation` o JOIN `tabServer Agent` a ON a.name=o.server_agent "
                 "JOIN `tabBench` b ON b.name=o.bench LEFT JOIN `tabManaged Site` s ON s.name=o.managed_site "
                 f"WHERE o.operation_id=%s{suffix}",
                 (operation_id,),
@@ -355,7 +355,7 @@ class FrappeIngestionRepository:
                 }
             ).insert(ignore_permissions=True)
             cursor = event.sequence
-        current = self.db.get_value("Operation", operation["name"], "last_event_sequence")
+        current = self.db.get_value("Controller Operation", operation["name"], "last_event_sequence")
         if int(current or 0) != cursor:
             raise IngestionConflictError("event cursor commit conflict")
         return cursor
@@ -432,7 +432,7 @@ class FrappeIngestionRepository:
             values["started_at"] = _aware(result.received_at).replace(tzinfo=None)
         if state in {"succeeded", "failed", "cancelled", "timed_out", "needs_intervention", "dead_letter", "rejected"}:
             values["completed_at"] = _aware(result.received_at).replace(tzinfo=None)
-        self.db.set_value("Operation", operation["name"], values, update_modified=False)
+        self.db.set_value("Controller Operation", operation["name"], values, update_modified=False)
         target_values: dict[str, Any] = {
             "result_json": result.result_json,
             "error_code": error_code,

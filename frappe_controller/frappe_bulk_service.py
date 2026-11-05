@@ -64,7 +64,7 @@ def _policy(frappe: Any, operation: str, environment: str, count: int) -> Any:
 
 def _preview_rows(frappe: Any, ids: Sequence[str]) -> tuple[dict[str, Any], dict[str, Any]]:
     operations = frappe.get_all(
-        "Operation",
+        "Controller Operation",
         filters={"name": ["in", list(ids)]},
         fields=[
             "name", "operation_id", "operation_type", "server_agent", "bench",

@@ -45,13 +45,13 @@ async function loadJobLog(frm) {
       (frm.doc.state === "succeeded" && handover?.customer_required && !handover.customer_linked)) {
     frm._timeline_timer = setTimeout(() => {
       const route = frappe.get_route();
-      if (route[0] === "Form" && route[1] === "Operation" && route[2] === operation &&
+      if (route[0] === "Form" && route[1] === "Controller Operation" && route[2] === operation &&
           frm.doc.name === operation && !frm.is_dirty()) frm.reload_doc();
     }, 10000);
   }
 }
 
-frappe.ui.form.on("Operation", {
+frappe.ui.form.on("Controller Operation", {
   refresh(frm) {
     if (!frm.is_new()) {
       frm.add_custom_button(__("Refresh Timeline"), () => frm.reload_doc());
@@ -77,7 +77,7 @@ frappe.ui.form.on("Operation", {
             type: "POST", freeze: true, freeze_message: __("Creating retry operation…"),
           });
           const result = response.message || response;
-          frappe.set_route("Form", "Operation", result.operation_id);
+          frappe.set_route("Form", "Controller Operation", result.operation_id);
         });
       });
     }

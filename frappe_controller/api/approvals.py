@@ -21,7 +21,7 @@ def decide_operation(
     ):
         frappe.throw("Approval comment is invalid", frappe.ValidationError)
     operation = frappe.db.get_value(
-        "Operation",
+        "Controller Operation",
         operation_id,
         ["name", "approval_policy", "approval_status", "requested_by"],
         as_dict=True,
@@ -42,7 +42,7 @@ def decide_operation(
         }
     ).insert()
     updated = frappe.db.get_value(
-        "Operation",
+        "Controller Operation",
         operation.name,
         ["approval_status", "approval_count", "required_approvals"],
         as_dict=True,

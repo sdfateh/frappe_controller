@@ -22,9 +22,9 @@ def _age(now: datetime, value: datetime | None) -> float:
 
 
 def _grouped(frappe: Any, doctype: str, allowed: tuple[str, ...]) -> dict[str, int]:
-    if doctype == "Operation":
+    if doctype == "Controller Operation":
         rows = frappe.db.sql(
-            "SELECT state, COUNT(*) AS count FROM `tabOperation` GROUP BY state",
+            "SELECT state, COUNT(*) AS count FROM `tabController Operation` GROUP BY state",
             as_dict=True,
         )
     elif doctype == "Bulk Operation":
@@ -89,17 +89,17 @@ def controller_metrics_snapshot(
         for row in certificates
     )
     oldest_queue = frappe.db.get_value(
-        "Operation", {"state": "queued"}, "MIN(creation)"
+        "Controller Operation", {"state": "queued"}, "MIN(creation)"
     )
     oldest_bulk = frappe.db.get_value(
         "Bulk Operation", {"state": "approved"}, "MIN(approved_at)"
     )
     return ControllerMetrics(
-        operation_counts=_grouped(frappe, "Operation", OPERATION_STATES),
+        operation_counts=_grouped(frappe, "Controller Operation", OPERATION_STATES),
         bulk_counts=_grouped(frappe, "Bulk Operation", BULK_STATES),
         agent_counts=agent_counts,
         stale_inventory_count=stale_inventory,
-        pending_operation_approvals=int(frappe.db.count("Operation", {"approval_status": "pending"})),
+        pending_operation_approvals=int(frappe.db.count("Controller Operation", {"approval_status": "pending"})),
         pending_bulk_approvals=int(frappe.db.count("Bulk Operation", {"approval_status": "pending"})),
         certificates_expiring_7d=expires_7d,
         certificates_expiring_30d=expires_30d,

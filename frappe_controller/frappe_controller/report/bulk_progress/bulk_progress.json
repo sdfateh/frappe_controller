@@ -2,7 +2,7 @@
   "add_total_row": 0,
   "columns": [
     {"fieldname": "bulk_operation_id", "fieldtype": "Data", "label": "Bulk Operation ID", "width": 280},
-    {"fieldname": "operation_type", "fieldtype": "Data", "label": "Operation", "width": 190},
+    {"fieldname": "operation_type", "fieldtype": "Data", "label": "Controller Operation", "width": 190},
     {"fieldname": "state", "fieldtype": "Data", "label": "State", "width": 130},
     {"fieldname": "total_targets", "fieldtype": "Int", "label": "Total", "width": 80},
     {"fieldname": "planned_count", "fieldtype": "Int", "label": "Planned", "width": 85},

@@ -17,7 +17,7 @@ def main():
     from frappe_controller.api.customer_sites import (
         create_production_site, reconcile_customer_site, reconcile_customer_sites,
     )
-    before = {dt: frappe.db.count(dt) for dt in ["Customer", "Operation", "Operation Target", "Managed Site"]}
+    before = {dt: frappe.db.count(dt) for dt in ["Customer", "Controller Operation", "Operation Target", "Managed Site"]}
     sample = frappe.db.get_value("Customer", {}, ["customer_group", "territory"], as_dict=True)
     assert sample, "At least one Customer is needed for group/territory defaults"
 
@@ -49,7 +49,7 @@ def main():
                 if inventory_first:
                     inventory(domain)
                     assert not reconcile_customer_site(customer.name)
-                frappe.db.set_value("Operation", result["operation_id"], "state", "succeeded")
+                frappe.db.set_value("Controller Operation", result["operation_id"], "state", "succeeded")
                 if not inventory_first:
                     assert not reconcile_customer_site(customer.name)
                     inventory(domain)
