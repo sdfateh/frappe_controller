@@ -5,8 +5,6 @@ import re
 
 
 PROFILES = {
-    "inventory": {"label": "Inventory and verification", "operations": ["site.verify"], "required_apps": ["frappe"]},
-    "backup": {"label": "Backup and verification", "operations": ["site.verify", "site.backup"], "required_apps": ["frappe"]},
     "customer_erp": {
         "label": "Customer ERP creation",
         "operations": ["site.verify", "site.backup", "site.create_blank"],

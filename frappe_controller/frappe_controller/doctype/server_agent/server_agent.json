@@ -16,6 +16,7 @@
     "environment",
     "enabled",
     "status",
+    "connection_section",
     "protocol_version",
     "audience",
     "agent_version",
@@ -23,6 +24,7 @@
     "allowed_site_suffixes_json",
     "allowed_operations_json",
     "setup_required_apps_json",
+    "upgrade_section",
     "drain_requested",
     "drain_requested_by",
     "drain_requested_at",
@@ -37,6 +39,7 @@
     "upgrade_deployed_at",
     "upgrade_verified_at",
     "upgrade_failure_code",
+    "inventory_section",
     "capabilities_json",
     "reported_status",
     "last_seen",
@@ -99,6 +102,7 @@
       "options": "Enrolling\nOffline\nOnline\nDisabled",
       "in_list_view": 1
     },
+    {"fieldname": "connection_section", "label": "Connection Details", "fieldtype": "Section Break", "collapsible": 1, "collapse": 1},
     {
       "fieldname": "protocol_version",
       "label": "Protocol Version",
@@ -122,6 +126,7 @@
     {"fieldname": "allowed_site_suffixes_json", "label": "Allowed Site Suffixes", "fieldtype": "Code", "options": "JSON", "default": "[]", "description": "JSON list, for example [\"kaleam.net\"]"},
     {"fieldname": "allowed_operations_json", "label": "Allowed Operations", "fieldtype": "Code", "options": "JSON", "default": "[\"site.verify\"]"},
     {"fieldname": "setup_required_apps_json", "label": "Setup Required Apps", "fieldtype": "Code", "options": "JSON", "default": "[\"frappe\"]", "description": "Ordered apps for new installations. Apply a setup profile or customize explicitly; existing Bench policy changes require a local policy update."},
+    {"fieldname": "upgrade_section", "label": "Upgrade Details", "fieldtype": "Section Break", "collapsible": 1, "collapse": 1},
     {"fieldname": "drain_requested", "label": "Drain Requested", "fieldtype": "Check", "default": "0", "read_only": 1},
     {"fieldname": "drain_requested_by", "label": "Drain Requested By", "fieldtype": "Link", "options": "User", "read_only": 1},
     {"fieldname": "drain_requested_at", "label": "Drain Requested At", "fieldtype": "Datetime", "read_only": 1},
@@ -136,6 +141,7 @@
     {"fieldname": "upgrade_deployed_at", "label": "Upgrade Deployed At", "fieldtype": "Datetime", "read_only": 1},
     {"fieldname": "upgrade_verified_at", "label": "Upgrade Verified At", "fieldtype": "Datetime", "read_only": 1},
     {"fieldname": "upgrade_failure_code", "label": "Upgrade Failure Code", "fieldtype": "Data", "read_only": 1},
+    {"fieldname": "inventory_section", "label": "Inventory Details", "fieldtype": "Section Break", "collapsible": 1, "collapse": 1},
     {
       "fieldname": "capabilities_json",
       "label": "Capabilities JSON",

@@ -32,7 +32,6 @@ assert.equal(typeof fresh.buttons["Apply Setup Profile"], "function");
 assert.equal(fresh.buttons["Generate Install Token"], undefined);
 fresh.buttons["Apply Setup Profile"]();
 requests.pop().callback({message: {customer_erp: {label: "Customer ERP creation", operations: ["site.verify", "site.backup", "site.create_blank"], required_apps: ["frappe", "erpnext", "mos_pro"]}}});
-prompts.pop().callback({profile: "Customer ERP creation"});
 assert.deepEqual(fresh.values, {}); // No policy change before the replacement is reviewed.
 confirmations.pop()();
 assert.deepEqual(JSON.parse(fresh.values.setup_required_apps_json), ["frappe", "erpnext", "mos_pro"]);

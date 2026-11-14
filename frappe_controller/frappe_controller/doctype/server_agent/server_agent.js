@@ -8,15 +8,12 @@ frappe.ui.form.on("Server Agent", {
         method: "frappe_controller.frappe_controller.doctype.server_agent.server_agent.get_setup_profiles",
         callback(response) {
           const profiles = response.message || {};
-          const labels = Object.values(profiles).map((profile) => profile.label);
-          frappe.prompt([{fieldname: "profile", label: __("Setup Profile"), fieldtype: "Select", options: labels.join("\n"), reqd: 1}], (values) => {
-            const selected = Object.values(profiles).find((profile) => profile.label === values.profile);
-            if (!selected) return;
-            frappe.confirm(__("Replace the operation and setup app lists with this profile? Review and save the policy before generating a token. Existing installations require a local policy update."), () => {
-              frm.set_value("allowed_operations_json", JSON.stringify(selected.operations, null, 2));
-              frm.set_value("setup_required_apps_json", JSON.stringify(selected.required_apps, null, 2));
-            });
-          }, __("Installation Policy"), __("Apply"));
+          const selected = profiles.customer_erp;
+          if (!selected) return;
+          frappe.confirm(__("Replace the operation and setup app lists with this profile? Review and save the policy before generating a token. Existing installations require a local policy update."), () => {
+            frm.set_value("allowed_operations_json", JSON.stringify(selected.operations, null, 2));
+            frm.set_value("setup_required_apps_json", JSON.stringify(selected.required_apps, null, 2));
+          });
         },
       });
     });

@@ -254,7 +254,7 @@ does not make the development Agent a production target.
    reviewed immutable value `repository@sha256:<64 hex>`.
 2. Create a **Server Agent**, choose **Apply Setup Profile**, fill **Allowed Site
    Suffixes JSON**, and review/save the operation and setup app lists. Profiles
-   cover inventory/verification, backup/verification, or Customer ERP creation;
+   allow site verification, backup, and Customer ERP creation;
    they do not enable environment feature flags or bypass approvals.
 3. On that record, click **Generate Install Token**.
 4. Run the displayed command from the reviewed `host_helper` checkout, paste the
